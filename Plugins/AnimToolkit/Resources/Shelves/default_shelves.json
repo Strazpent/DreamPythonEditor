@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "active": "Animation",
+  "shelves": [
+    {
+      "name": "Animation",
+      "buttons": [
+        {"label": "Picker", "icon": "Icons.SelectInViewport", "tooltip": "Rig Picker", "command": "import animtk.tools.picker as m; m.show()"},
+        {"label": "Poses", "icon": "Icons.Star", "tooltip": "Pose / Animation Library", "command": "import animtk.tools.pose_library as m; m.show()"},
+        {"label": "Sets", "icon": "Icons.Link", "tooltip": "Selection Sets", "command": "import animtk.tools.selection_sets as m; m.show()"},
+        {"label": "Toolbelt", "icon": "Icons.Layout", "tooltip": "Anim Toolbelt (tween, keys, timing)", "command": "import animtk.tools.toolbelt as m; m.show()"},
+        {"label": "Characters", "icon": "Icons.FolderOpen", "tooltip": "Character Loader", "command": "import animtk.tools.character_loader as m; m.show()"},
+        {"label": "Key", "tooltip": "Key the selected controls", "color": "#229954", "command": "import animtk.ops as ops\nops.key_selected()"},
+        {"label": "Tween 50", "tooltip": "Tween the selected controls halfway between their neighbours", "command": "import animtk.core as core, animtk.ops as ops\nwith core.undo('Tween 50%'):\n    ops.blend('TWEEN', 0.0)"},
+        {"label": "Reset", "tooltip": "Reset the selected controls", "command": "import animtk.ops as ops\nops.reset_selected()"},
+        {"label": "Mirror", "tooltip": "Mirror the selected controls' pose", "command": "import animtk.ops as ops\nops.mirror_selected()"},
+        {"label": "Copy Pose", "tooltip": "Copy the selected controls' pose", "command": "import animtk.ops as ops\nops.copy_pose()"},
+        {"label": "Paste Pose", "tooltip": "Paste onto the selected controls", "command": "import animtk.ops as ops\nops.paste_pose()"},
+        {"label": "Prev Key", "tooltip": "Previous key of the selected controls", "command": "import animtk.ops as ops\nops.jump_key(-1)"},
+        {"label": "Next Key", "tooltip": "Next key of the selected controls", "command": "import animtk.ops as ops\nops.jump_key(1)"}
+      ]
+    },
+    {
+      "name": "Scripts",
+      "buttons": [
+        {"label": "Hello", "tooltip": "A minimal shelf script", "script": "hello_shelf.py"},
+        {"label": "Print Sel", "tooltip": "Print the selected controls and values", "script": "print_selection.py"},
+        {"label": "Key Rig", "tooltip": "Key every control of the selected rig", "script": "key_whole_rig.py"},
+        {"label": "Fit Range", "tooltip": "Playback range to the keys of the selection", "script": "fit_range_to_keys.py"}
+      ]
+    },
+    {
+      "name": "Develop",
+      "buttons": [
+        {"label": "Reload", "icon": "Icons.Refresh", "tooltip": "Re-import animtk after editing tools", "command": "import animtk; animtk.reload()"},
+        {"label": "New Tool", "icon": "Icons.Plus", "tooltip": "Start a tool from the template", "command": "import animtk.template as t; t.new_tool()"},
+        {"label": "Data", "icon": "Icons.FolderOpen", "tooltip": "Open the Anim Toolkit data folder", "command": "import animtk.core as c, animtk.shelf as s; s.open_folder(c.user_dir())"}
+      ]
+    }
+  ]
+}

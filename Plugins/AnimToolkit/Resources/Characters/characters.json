@@ -1,0 +1,18 @@
+{
+  "characters": [
+    {
+      "name": "Manny",
+      "category": "Mannequins",
+      "rig": "/Game/Characters/Mannequins/Rigs/CR_Mannequin_Body",
+      "mesh": "/Game/Characters/Mannequins/Meshes/SKM_Manny",
+      "thumbnail": ""
+    },
+    {
+      "name": "Quinn",
+      "category": "Mannequins",
+      "rig": "/Game/Characters/Mannequins/Rigs/CR_Mannequin_Body",
+      "mesh": "/Game/Characters/Mannequins/Meshes/SKM_Quinn",
+      "thumbnail": ""
+    }
+  ]
+}

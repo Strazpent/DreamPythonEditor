@@ -1,0 +1,25 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Anim Toolkit",
+	"Description": "Python wrappers around Sequencer, Control Rig and Slate so technical animators can build animation tools in Python. Ships a Maya-style script shelf and example tools: rig picker, pose/animation library, selection sets, an animator toolbelt and a character loader.",
+	"Category": "Animation",
+	"EngineVersion": "5.8.0",
+	"CanContainContent": true,
+	"EnabledByDefault": false,
+	"Modules": [
+		{
+			"Name": "AnimToolkit",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"PlatformAllowList": [ "Win64", "Linux", "Mac" ]
+		}
+	],
+	"Plugins": [
+		{ "Name": "PythonScriptPlugin", "Enabled": true },
+		{ "Name": "EditorScriptingUtilities", "Enabled": true },
+		{ "Name": "SequencerScripting", "Enabled": true },
+		{ "Name": "ControlRig", "Enabled": true }
+	]
+}
