@@ -1,0 +1,556 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x2218">
+<title>Unreal integration</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  /* main composite */
+  .leftcol { width: 470px; }
+  .outliner { height: 352px; }
+  .pycol .code { height: 261px; flex: none; }
+  .pycol .outarea { flex: none; }
+  .pycol .out { height: 334px; }
+
+  /* minor (panel) tab wells inside the level editor */
+  .mtabs { display: flex; height: 26px; background: var(--bg0); align-items: flex-end; padding-left: 4px; gap: 2px; flex: none; }
+  .mtab { background: var(--bg4); color: var(--text); padding: 4px 12px 5px 9px; border-radius: 3px 3px 0 0; font-size: 11.5px; display: flex; align-items: center; gap: 6px; }
+  .mtab.active { background: var(--bg3); color: var(--text-hi); box-shadow: inset 0 2px 0 var(--accent); }
+  .mtab .x { color: var(--text-lo); margin-left: 4px; }
+
+  /* outliner */
+  .olbar { height: 32px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: var(--bg3); border-bottom: 1px solid var(--line); }
+  .olsearch { flex: 1; background: var(--bg1); border: 1px solid var(--edge); border-radius: 12px; height: 22px; padding: 0 10px; color: var(--text-lo); display: flex; align-items: center; }
+  .olhead, .olrow { display: grid; grid-template-columns: 24px 1fr 150px; align-items: center; white-space: nowrap; }
+  .olhead { height: 22px; flex: none; background: var(--bg2); color: var(--text-lo); font-size: 11px; border-bottom: 1px solid var(--line); }
+  .olrow { height: 20px; font-size: 12px; }
+  .olrow .eye { color: #666; text-align: center; font-size: 10px; }
+  .olrow .ty { color: var(--text-lo); }
+  .olrow.sel { background: var(--accent-lo); color: var(--text-hi); }
+  .olrow.sel .ty { color: #a9c8ea; }
+  .olrow .l1 { padding-left: 14px; } .olrow .l2 { padding-left: 30px; }
+  .olfoot { height: 22px; flex: none; font-size: 11px; color: var(--text-lo); padding: 0 10px; display: flex; align-items: center; border-top: 1px solid var(--line); background: var(--bg3); margin-top: auto; }
+  .ic { display: inline-block; width: 14px; text-align: center; margin-right: 5px; font-size: 11px; }
+  .ic.mesh { color: #4fd6e8; } .ic.fold { color: #c9a85a; } .ic.lit { color: #ffd54f; } .ic.wld { color: #9aa7b8; } .ic.misc { color: #b0b0b0; }
+
+  /* content browser */
+  .cbbar { height: 32px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 6px; background: var(--bg3); border-bottom: 1px solid var(--line); }
+  .cbbar .add { color: #8fe08f; }
+  .cbpath { color: var(--text-lo); font-size: 11.5px; margin-left: 6px; white-space: nowrap; }
+  .cbpath b { color: var(--text-hi); font-weight: 600; }
+  .cbsearch { height: 30px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-bottom: 1px solid var(--line); }
+  .tiles { display: grid; gap: 8px; padding: 10px; }
+  .tiles.c4 { grid-template-columns: repeat(4, 1fr); }
+  .tiles.c3 { grid-template-columns: repeat(3, 1fr); }
+  .tile { background: #262626; border-radius: 3px; overflow: hidden; border: 1px solid #2c2c2c; }
+  .tile .th { height: 72px; }
+  .tile .stripe { height: 3px; }
+  .tile .nm { font-size: 11px; color: var(--text-hi); padding: 4px 6px 0; height: 30px; line-height: 13px; word-break: break-all; }
+  .tile .ty { font-size: 10px; color: var(--text-lo); padding: 0 6px 5px; }
+  .tile.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: #1c3350; }
+  .tile.sel .ty { color: #a9c8ea; }
+  .st-mesh { background: #00bcd4; } .st-mat { background: #3fbf3f; } .st-mi { background: #2e7d32; } .st-tex { background: #c62828; }
+  .th.r1 { background: radial-gradient(ellipse 30% 26% at 50% 56%, #8a8279 0%, #5f5850 55%, #3a3530 88%, transparent 100%), radial-gradient(ellipse 44% 10% at 50% 82%, rgba(0,0,0,.55), transparent), #1b1b1b; }
+  .th.r2 { background: radial-gradient(ellipse 40% 30% at 48% 58%, #7d766d 0%, #57514a 60%, #36322d 90%, transparent 100%), radial-gradient(ellipse 50% 10% at 50% 84%, rgba(0,0,0,.55), transparent), #1b1b1b; }
+  .th.r3 { background: radial-gradient(ellipse 22% 18% at 52% 62%, #8f877d 0%, #625b53 55%, #3b3631 88%, transparent 100%), radial-gradient(ellipse 30% 8% at 52% 78%, rgba(0,0,0,.55), transparent), #1b1b1b; }
+  .th.r4 { background: radial-gradient(ellipse 16% 36% at 50% 52%, #847c72 0%, #5b544c 55%, #37332e 88%, transparent 100%), radial-gradient(ellipse 30% 8% at 50% 86%, rgba(0,0,0,.55), transparent), #1b1b1b; }
+  .th.r5 { background: linear-gradient(160deg, transparent 38%, #6f685f 39%, #4c4640 70%, transparent 71%), #1b1b1b; }
+  .th.cl { background: linear-gradient(100deg, transparent 22%, #6c655c 23%, #8a8279 45%, #4a443e 70%, transparent 78%), radial-gradient(ellipse 50% 9% at 50% 86%, rgba(0,0,0,.6), transparent), #1b1b1b; }
+  .th.mat { background: radial-gradient(circle at 42% 36%, #c2b9ad 0, #73695e 26%, #2e2a26 52%, #1b1b1b 54%); }
+  .th.mi { background: radial-gradient(circle at 42% 36%, #b9c7a2 0, #5f7046 26%, #252c1d 52%, #1b1b1b 54%); }
+  .th.td { background: repeating-radial-gradient(circle at 30% 40%, #6d655b 0 3px, #4f4943 3px 7px, #5d564e 7px 9px), #1b1b1b; }
+  .th.tn { background: repeating-linear-gradient(35deg, #7f7ff7 0 5px, #8f86ff 5px 8px, #6f78ea 8px 12px); }
+
+  /* python column */
+  .pycol .toolbar { flex: none; }
+  .lines .dropped { background: rgba(0,112,224,.11); box-shadow: inset 3px 0 0 #3d8fe0; }
+  .drop-tag { color: #9fd0ff; background: #13233a; font: 10px/16px var(--ui); border-radius: 3px; padding: 0 6px; margin-left: 12px; display: inline-block; vertical-align: 1px; }
+  .alias { color: #a8c7ee; }
+  .out .hdr .alias b { color: #d7e6f8; font-weight: 600; }
+
+  /* drag ghost */
+  .dragghost { position: absolute; z-index: 14; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
+  .gstack { position: relative; width: 70px; height: 62px; flex: none; }
+  .gstack .gt { position: absolute; width: 50px; height: 50px; border-radius: 3px; border: 1px solid #6aa7e8; opacity: .9; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
+  .gbadge { position: absolute; right: 0; top: -8px; background: var(--accent); color: #fff; border-radius: 9px; font: 700 11px/18px var(--ui); padding: 0 6px; }
+  .gcur { position: absolute; left: 30px; top: 30px; }
+  .gdeco { margin-top: 12px; background: #161616; border: 1px solid #4a4a4a; border-radius: 3px; padding: 5px 10px; font: 12px/1.45 var(--ui); display: flex; gap: 8px; align-items: flex-start; box-shadow: 0 4px 16px rgba(0,0,0,.6); white-space: nowrap; }
+  .gdeco .okc { color: var(--ok); font-weight: 700; }
+  .gdeco code { font-family: var(--mono); color: var(--fn); font-size: 11.5px; }
+  .gdeco .dim { color: var(--text-lo); font-size: 11px; }
+  #dragPath { position: absolute; left: 0; top: 0; z-index: 13; pointer-events: none; overflow: visible; }
+
+  /* UE global status bar */
+  .uebar { gap: 0; padding: 0 4px; height: 26px; }
+  .uebar .sb { padding: 0 10px; height: 100%; display: flex; align-items: center; gap: 6px; color: var(--text); white-space: nowrap; }
+  .uebar .cmdbox { background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; height: 18px; padding: 0 8px; color: var(--text-lo); display: flex; align-items: center; width: 220px; margin-left: 2px; }
+  .uebar .pyitem { border-left: 1px solid #111; border-right: 1px solid #111; }
+  .uebar .pyitem.hov { background: var(--bg5); }
+  .pyb { font: 700 8.5px/12px var(--mono); color: #ffd54f; border: 1px solid #6b5a1e; border-radius: 2px; padding: 0 2px; }
+
+  /* insets */
+  .insets { display: flex; gap: 20px; margin-top: 24px; }
+  .inset { position: relative; }
+  .inset-cap { height: 22px; font: 600 11px/16px var(--ui); color: var(--text-lo); text-transform: uppercase; letter-spacing: .5px; }
+  .inset-cap b { color: var(--text); font-weight: 600; }
+  .frame { background: var(--bg1); border: 1px solid var(--edge); border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.6); display: flex; flex-direction: column; }
+
+  /* Unreal menus */
+  .menu { position: absolute; z-index: 12; background: #1d1d1d; border: 1px solid #424242; border-radius: 4px; box-shadow: 0 8px 28px rgba(0,0,0,.75); padding: 4px 0; font: 12px var(--ui); color: var(--text); }
+  .menu .h { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; color: var(--text-lo); padding: 5px 12px 3px; height: 21px; }
+  .menu .mi { height: 22px; display: flex; align-items: center; padding: 0 10px 0 6px; gap: 6px; white-space: nowrap; }
+  .menu .mi .mic { width: 18px; text-align: center; color: var(--text-lo); font-size: 11px; flex: none; }
+  .menu .mi .kb, .menu .mi .sub { margin-left: auto; color: var(--text-lo); font-size: 11px; padding-left: 16px; }
+  .menu .mi.open { background: #3b3b3b; color: var(--text-hi); }
+  .menu .mi.on { background: var(--accent); color: #fff; }
+  .menu .mi.on .sub, .menu .mi.on .kb, .menu .mi.on .mic { color: #dbeaff; }
+  .menu .mi .cnt { color: var(--text-lo); font-size: 11px; }
+  .menu .sep { height: 1px; background: #353535; margin: 4px 0; }
+  .scope { margin-left: auto; font-size: 10px; line-height: 14px; border-radius: 7px; padding: 0 6px; }
+  .scope.project { background: #1d3a5a; color: #a9d0ff; } .scope.studio { background: #3d2e57; color: #d4bcff; } .scope.user { background: #2f2f2f; color: #c8c8c8; }
+  .tip { position: absolute; z-index: 13; background: #121212; border: 1px solid #4a4a4a; border-radius: 3px; padding: 7px 10px; font: 11.5px/1.5 var(--ui); color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,.7); }
+  .tip b { color: var(--text-hi); }
+  .tip code { font-family: var(--mono); color: var(--text-hi); font-size: 11px; }
+  .tip .dim { color: var(--text-lo); }
+
+  /* viewport crop and status flyout */
+  .vp { height: 206px; position: relative;
+        background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 64px) 0 112px / 100% 94px no-repeat,
+                    linear-gradient(#2b3541 0%, #232b34 54%, #262626 54.5%, #1d1d1d 100%); }
+  .vprocks { position: absolute; left: 628px; top: 92px; width: 180px; height: 90px;
+             background: radial-gradient(ellipse 22% 30% at 25% 62%, #6d665e 0%, #4b4540 60%, #2f2b27 92%, transparent 100%),
+                         radial-gradient(ellipse 14% 18% at 62% 72%, #757067 0%, #4e4943 60%, #2f2b27 92%, transparent 100%),
+                         radial-gradient(ellipse 10% 40% at 84% 50%, #6a645c 0%, #47423d 60%, #2f2b27 92%, transparent 100%); }
+  .vptb { position: absolute; left: 8px; top: 8px; display: flex; gap: 6px; }
+  .vptb span { background: rgba(20,20,20,.75); border-radius: 3px; padding: 2px 8px; font-size: 11px; color: var(--text); }
+  .chipset { position: absolute; left: 24px; top: 46px; border: 1px dashed #5a5a5a; border-radius: 6px; padding: 8px 12px 10px; background: rgba(10,10,10,.55); }
+  .chipset .cap { font-size: 10.5px; color: var(--text-lo); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 7px; }
+  .chipgrid { display: grid; grid-template-columns: auto auto; gap: 8px 12px; }
+  .chip { height: 24px; background: var(--bg3); border: 1px solid #111; border-radius: 3px; padding: 0 10px; display: flex; align-items: center; gap: 7px; font-size: 11px; white-space: nowrap; color: var(--text); }
+  .chip.busy { background: var(--accent); color: #fff; } .chip.busy .pyb { color: #fff; border-color: #9cc8ff; }
+  .chip.busy b { background: #0a4a94; border-radius: 2px; padding: 0 6px; font-weight: 600; }
+  .chip.nat { color: var(--warn); } .chip.ok { color: var(--ok); } .chip.err { color: var(--err); }
+  .chip .lbl { color: var(--text-lo); }
+  .fly { position: absolute; z-index: 12; width: 540px; height: 176px; background: #1f1f1f; border: 1px solid #4a4a4a; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.75); font-size: 12px; }
+  .fly .fh { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); color: var(--text-hi); font-weight: 600; }
+  .fly .fr { display: grid; grid-template-columns: 70px 1fr; padding: 5px 12px 0; line-height: 1.45; }
+  .fly .fl { color: var(--text-lo); font-size: 11px; padding-top: 1px; }
+  .fly .ok { color: var(--ok); } .fly .dim { color: var(--text-lo); }
+  .fly b { color: var(--text-hi); font-weight: 600; }
+  .fly .ff { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-top: 1px solid var(--line); }
+  .fly .ff .btn { padding: 3px 12px; font-size: 11.5px; }
+  .legend.l9 { margin-top: 34px; }
+  .legend code { font-family: var(--mono); font-size: 11.5px; color: var(--text-hi); }
+  /* v2 additions */
+  .menu .mi .sm2 { margin-right: 0; }
+  .clip { position: absolute; z-index: 13; background: #121212; border: 1px solid #4a4a4a; border-radius: 3px; padding: 7px 10px; font: 11.5px/1.5 var(--ui); color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,.7); }
+  .clip .ch { color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+  .clip pre { margin: 0; font: 11.5px/17px var(--mono); color: #d4d4d4; white-space: pre; }
+  .clip .dim { color: var(--text-lo); }
+  .clip .cl { font: 11.5px/17px var(--mono); color: #d4d4d4; white-space: pre-wrap; word-break: break-all; padding-left: 4ch; text-indent: -4ch; }
+  .clip .cl .m { font-style: italic; }
+  .dp { background: var(--bg1); }
+  .dp .dhd { padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--bg2); }
+  .dp .dhd b { color: var(--text-hi); }
+  .dp .dhd .dim { color: var(--text-lo); font-size: 11px; display: block; }
+  .dp .cat { height: 24px; display: flex; align-items: center; padding: 0 8px; background: var(--bg3); color: var(--text-hi); font-weight: 600; font-size: 11.5px; border-bottom: 1px solid var(--line); }
+  .dp .prow { display: grid; grid-template-columns: 140px 1fr; height: 24px; align-items: center; padding: 0 8px 0 18px; border-bottom: 1px solid #1d1d1d; font-size: 11.5px; white-space: nowrap; }
+  .dp .prow.sel { background: var(--accent-lo); }
+  .dp .prow .val { color: var(--text-hi); display: flex; align-items: center; gap: 6px; }
+  .dp .seg3 { display: flex; border: 1px solid var(--edge); border-radius: 3px; overflow: hidden; }
+  .dp .seg3 span { padding: 0 4px; font-size: 10px; color: var(--text-lo); border-right: 1px solid var(--edge); }
+  .dp .seg3 span:last-child { border-right: 0; }
+  .dp .seg3 span.on { background: var(--bg5); color: var(--text-hi); }
+  .mbar { height: 30px; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--bg3); border-bottom: 1px solid var(--line); }
+  .mbar span.open { background: var(--bg5); border-radius: 3px; padding: 2px 6px; margin: 0 -6px; color: var(--text-hi); }
+  .vp2 { height: 248px; position: relative;
+         background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 64px) 0 130px / 100% 100px no-repeat,
+                     linear-gradient(#2b3541 0%, #232b34 56%, #262626 56.5%, #1d1d1d 100%); }
+  .chipcol { position: absolute; left: 400px; top: 26px; border: 1px dashed #5a5a5a; border-radius: 6px; padding: 8px 12px 10px; background: rgba(10,10,10,.6); }
+  .chipcol .cap { font-size: 10.5px; color: var(--text-lo); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 7px; }
+  .chipcol .dream-item { height: 26px; border: 1px solid #111; border-radius: 3px; background: var(--bg3); margin-bottom: 7px; font-size: 11px; }
+  .chipcol .dream-item:last-child { margin-bottom: 0; }
+  .chipcol .dream-item.running, .chipcol .dream-item.task { border-color: transparent; }
+  .chipcol .lbl { color: var(--text-lo); font-size: 10.5px; margin-left: 6px; }
+  .uebar .dream-item { border-left: 1px solid #111; border-right: 1px solid #111; }
+  .uebar .dream-item.hov { background: var(--bg5); }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — Unreal integration: drag and drop, Copy as Python, the Dream submenu and the status-bar item</div>
+<div class="subtitle-strip">Composite of the Unreal Editor 5.8. Top: the Dream tab docked beside the Outliner and Content Browser while three assets are dropped into code. Below: the actor and asset context menus, a Details property, and the Unreal status bar with the Dream tab closed.</div>
+
+<!-- ============ main composite window ============ -->
+<div class="win" id="mainWin">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab active">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab">SM_Rock_Large<span class="x">×</span></div>
+  </div>
+
+  <div class="row">
+    <!-- left column: Outliner + Content Browser -->
+    <div class="col leftcol">
+      <div class="panel outliner">
+        <div class="mtabs"><div class="mtab active">Outliner<span class="x">×</span></div></div>
+        <div class="olbar"><div class="olsearch">⌕&nbsp; Search</div><span style="color:var(--text-lo)">⛭</span></div>
+        <div class="olhead"><span></span><span>Item Label ▴</span><span>Type</span></div>
+        <div class="olrow"><span class="eye">◉</span><span><span class="ic wld">▾</span>Lvl_Downtown (Editor)</span><span class="ty">World</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l1"><span class="ic fold">▾</span>Environment</span><span class="ty">Folder</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Boulder_03</span><span class="ty">StaticMeshActor</span></div>
+        <div class="olrow sel"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Large_01</span><span class="ty">StaticMeshActor</span></div>
+        <div class="olrow sel" id="olSel1"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Large_02</span><span class="ty">StaticMeshActor</span></div>
+        <div class="olrow sel"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Cliff_Edge_A</span><span class="ty">StaticMeshActor</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Small_07</span><span class="ty">StaticMeshActor</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l1"><span class="ic fold">▾</span>Lighting</span><span class="ty">Folder</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l2"><span class="ic lit">☀</span>DirectionalLight</span><span class="ty">DirectionalLight</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l2"><span class="ic misc">◐</span>SkyAtmosphere</span><span class="ty">SkyAtmosphere</span></div>
+        <div class="olrow"><span class="eye">◉</span><span class="l1"><span class="ic fold">▸</span>Gameplay</span><span class="ty">Folder</span></div>
+        <div class="olfoot">14 actors (3 selected)</div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="panel grow">
+        <div class="mtabs"><div class="mtab active">Content Browser 1<span class="x">×</span></div></div>
+        <div class="cbbar"><div class="tb"><span class="add">＋</span>Add</div><div class="tb">⤒ Import</div><div class="tb">⎙ Save All</div>
+          <span class="cbpath">All › Content › Environment › <b>Rocks</b></span></div>
+        <div class="cbsearch"><span style="color:var(--text-lo)">▼ Filters</span><div class="olsearch">⌕&nbsp; Search Rocks</div></div>
+        <div class="tiles c4">
+          <div class="tile"><div class="th mat"></div><div class="stripe st-mat"></div><div class="nm">M_Rock_Master</div><div class="ty">Material</div></div>
+          <div class="tile"><div class="th mi"></div><div class="stripe st-mi"></div><div class="nm">MI_Rock_Moss</div><div class="ty">Material Instance</div></div>
+          <div class="tile"><div class="th r1"></div><div class="stripe st-mesh"></div><div class="nm">SM_Boulder_03</div><div class="ty">Static Mesh</div></div>
+          <div class="tile sel" id="tileCliff"><div class="th cl"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Cliff</div><div class="ty">Static Mesh</div></div>
+          <div class="tile sel" id="tileLarge"><div class="th r2"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Large</div><div class="ty">Static Mesh</div></div>
+          <div class="tile sel"><div class="th r3"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Small</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th td"></div><div class="stripe st-tex"></div><div class="nm">T_Rock_D</div><div class="ty">Texture</div></div>
+          <div class="tile"><div class="th tn"></div><div class="stripe st-tex"></div><div class="nm">T_Rock_N</div><div class="ty">Texture</div></div>
+        </div>
+        <div class="olfoot">8 items (3 selected)</div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- right: Dream docked as a panel tab -->
+    <div class="col grow pycol">
+      <div class="mtabs"><div class="mtab active"><span class="dream-mark sm"></span>Dream<span class="x">×</span></div><div class="mtab">Details<span class="x">×</span></div></div>
+      <div class="toolbar">
+        <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+        <div class="tb"><span class="ico">⏹</span><span style="color:var(--text-lo)">Stop</span></div>
+        <div class="tb"><span class="ico">🐞</span>Debug</div>
+        <div class="tb"><span class="ico">⟳</span>Reload Package</div>
+        <div class="tb-sep"></div>
+        <div class="tb"><span class="chk on"></span>One undo step per run</div>
+        <div class="spacer"></div>
+        <div class="tb" id="insSelBtn" style="background:var(--bg4)"><span class="ico">⤓</span>Insert selection <span class="pill">Ctrl+Shift+V</span></div>
+        <div class="tb">⚙</div>
+      </div>
+      <div class="panel outarea">
+        <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div>
+          <div class="spacer"></div><span style="font-weight:400;text-transform:none;color:var(--text-lo)">Filter ▾ &nbsp; ⌕ &nbsp; Clear</span></div>
+        <div class="out follow">
+          <div class="hdr"><b>▶ Run #14</b> REPL <span class="ts">12:51:58 · ok</span></div>
+          <div class="echo">unreal.SystemLibrary.get_engine_version()</div>
+          <div class="res"># Result: '5.8.0-41234567+++UE5+Release-5.8'</div>
+          <div class="hdr"><b>▶ Run #15</b> REPL <span class="ts">12:52:10 · ok</span><span class="alias" id="replAliases">aliases as of 12:52:08: <b>sel</b> 3 actors · <b>sel_assets</b> 3 assets · <b>world</b> Lvl_Downtown · <b>subsys(cls)</b></span></div>
+          <div class="echo">sel</div>
+          <div class="res"># Result: [&lt;Object '/Game/Maps/Lvl_Downtown.Lvl_Downtown:PersistentLevel.Rock_Large_01' (0x0000027A1C3E9200) Class 'StaticMeshActor'&gt;,</div>
+          <div class="res">  &lt;Object '/Game/Maps/Lvl_Downtown.Lvl_Downtown:PersistentLevel.Rock_Large_02' (0x0000027A1C3E8A00) Class 'StaticMeshActor'&gt;,</div>
+          <div class="res">  &lt;Object '/Game/Maps/Lvl_Downtown.Lvl_Downtown:PersistentLevel.Cliff_Edge_A' (0x0000027A1C3E7600) Class 'StaticMeshActor'&gt;]</div>
+          <div class="hdr"><b>▶ Run #16</b> REPL <span class="ts">12:52:14 · ok</span></div>
+          <div class="echo">len(sel_assets), world.get_name()</div>
+          <div class="res"># Result: (3, 'Lvl_Downtown')</div>
+          <div class="hdr"><b>▶ Run #17</b> REPL <span class="ts">12:52:19 · ok</span></div>
+          <div class="echo">subsys(unreal.EditorActorSubsystem)</div>
+          <div class="res"># Result: &lt;Object '/Engine/Transient.UnrealEdEngine_0:EditorActorSubsystem_0' (0x0000027A0B7C4400) Class 'EditorActorSubsystem'&gt;</div>
+          <div class="hdr"><b>▶ Run #18</b> REPL <span class="ts">12:52:31 · ok · pasted from Copy as Python on Cliff_Edge_A</span></div>
+          <div class="echo" id="echoFind">cliff = unreal.find_object(None, "/Game/Maps/Lvl_Downtown.Lvl_Downtown:PersistentLevel.Cliff_Edge_A")  # Cliff_Edge_A</div>
+          <div class="echo"><span id="echoEq">cliff == sel[2]</span></div>
+          <div class="res"># Result: True</div>
+        </div>
+        <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span>sel[<span class="n">0</span>].<span class="f">get_actor_label</span>()<span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="etabs">
+        <div class="etab active"><span class="lang">PY</span>Untitled-4<span class="dot"></span></div>
+        <div class="etab"><span class="lang">PY</span>lod_audit.py<span class="x">×</span></div>
+        <div class="etab" style="color:var(--text-lo)">＋</div>
+      </div>
+      <div class="breadcrumb">Untitled › Untitled-4 <span style="color:var(--text-lo)">· journaled</span></div>
+      <div class="code">
+        <div class="gutter">
+          <div>1</div><div>2</div><div class="chg">3</div><div class="chg">4</div><div class="chg">5</div><div class="chg">6</div><div class="chg">7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div class="cur">13</div>
+        </div>
+        <div class="lines">
+<div><span class="c">import</span> unreal</div>
+<div></div>
+<div class="dropped">meshes <span class="o">=</span> [<span class="drop-tag" id="dropTag">inserted by drop · 3 assets · one edit</span></div>
+<div class="dropped">    unreal.<span class="f">load_asset</span>(<span class="s">"/Game/Environment/Rocks/SM_Rock_Large.SM_Rock_Large"</span>),</div>
+<div class="dropped">    unreal.<span class="f">load_asset</span>(<span class="s">"/Game/Environment/Rocks/SM_Rock_Small.SM_Rock_Small"</span>),<span id="dropAnchor"></span></div>
+<div class="dropped">    unreal.<span class="f">load_asset</span>(<span class="s">"/Game/Environment/Rocks/SM_Rock_Cliff.SM_Rock_Cliff"</span>),</div>
+<div class="dropped">]</div>
+<div id="ln8"></div>
+<div>sms <span class="o">=</span> unreal.<span class="f">get_editor_subsystem</span>(unreal.<span class="t">StaticMeshEditorSubsystem</span>)</div>
+<div><span class="c">for</span> mesh <span class="c">in</span> meshes:</div>
+<div>    <span class="c">if</span> sms.<span class="f">get_lod_count</span>(mesh) <span class="o">&lt;</span> <span class="n">3</span>:</div>
+<div>        sms.<span class="f">set_lod_group</span>(mesh, <span class="s">"LargeProp"</span>)</div>
+<div class="curline"><span class="cursor"></span></div>
+        </div>
+        <div class="minimap"><div class="vis"></div><i style="width:30%"></i><i style="width:0"></i><i style="width:25%"></i><i style="width:80%"></i><i style="width:80%"></i><i style="width:80%"></i><i style="width:8%"></i><i style="width:0"></i><i style="width:70%"></i><i style="width:35%"></i><i style="width:45%"></i><i style="width:55%"></i></div>
+      </div>
+      <div class="status">
+        <span class="ok">● Idle</span>
+        <span>Session</span>
+        <span>Language server <span class="ok">✓</span></span>
+        <div class="spacer"></div>
+        <span>Ln 13, Col 1</span><span>UTF-8 · LF</span><span>Journaled 3 s ago</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="status uebar">
+    <span class="sb">▤ Content Drawer</span><span class="sb">▦ Output Log</span><span class="sb">Cmd ▾<span class="cmdbox">Enter Console Command</span></span>
+    <div class="spacer"></div>
+    <span class="dream-item"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Idle <span class="sep">·</span> last run ok 0.01 s</span>
+    <span class="sb">Trace ▾</span><span class="sb">Derived Data ▾</span><span class="sb"><span class="ok">✓</span> All Saved</span><span class="sb">Revision Control ▾</span>
+  </div>
+</div>
+
+<!-- Ctrl+Shift+V tooltip -->
+<div class="tip" id="insTip" data-anchor="#insSelBtn" data-at="br" data-dx="-620" data-dy="6" style="width:650px; white-space:nowrap">
+  <b>Insert selection</b> <span class="dim">· Ctrl+Shift+V · inserts this line at the caret</span><br>
+  <code>sel = unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_selected_level_actors()</code><br>
+  <span class="dim">An ordinary assignment: from then on <code>sel</code> is yours, and Dream stops refreshing it this session.</span>
+</div>
+
+<!-- drag in progress: ghost of the three selected assets over the code -->
+<svg id="dragPath"><defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8cc4ff"/></marker></defs><path id="dragD" d="" fill="none" stroke="#8cc4ff" stroke-width="2" stroke-dasharray="6 5" opacity=".85" marker-end="url(#ah)"/></svg>
+<div class="dragghost" id="ghost" data-anchor="#dropAnchor" data-at="bl" data-dx="-36" data-dy="62">
+  <div class="gstack" id="gstack">
+    <div class="gt th r3" style="left:12px;top:8px"></div>
+    <div class="gt th r2" style="left:6px;top:4px"></div>
+    <div class="gt th cl" style="left:0;top:0"></div>
+    <span class="gbadge">3</span>
+    <svg class="gcur" width="16" height="22" viewBox="0 0 16 22"><path d="M1,1 L1,17 L5,13 L8,20 L11,19 L8,12 L14,12 z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg>
+  </div>
+  <div class="gdeco" id="dragDeco"><span class="okc">✓</span><div><div>Insert 3 assets as a list of <code>unreal.load_asset()</code> calls</div><div class="dim">Hold Alt to insert soft object path strings instead</div></div></div>
+</div>
+
+<!-- ============ insets: actor and asset context menus ============ -->
+<div class="insets">
+  <!-- Outliner context menu -->
+  <div class="inset" style="width:766px;height:470px">
+    <div class="inset-cap"><b>Outliner</b> · right-click on the three selected actors</div>
+    <div class="frame" style="width:300px;height:448px">
+      <div class="mtabs"><div class="mtab active">Outliner<span class="x">×</span></div></div>
+      <div class="olbar"><div class="olsearch">⌕&nbsp; Search</div><span style="color:var(--text-lo)">⛭</span></div>
+      <div class="olhead" style="grid-template-columns:24px 1fr 110px"><span></span><span>Item Label ▴</span><span>Type</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span><span class="ic wld">▾</span>Lvl_Downtown (Editor)</span><span class="ty">World</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l1"><span class="ic fold">▾</span>Environment</span><span class="ty">Folder</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Boulder_03</span><span class="ty">StaticMeshActor</span></div>
+      <div class="olrow sel" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Large_01</span><span class="ty">StaticMeshActor</span></div>
+      <div class="olrow sel" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Large_02</span><span class="ty">StaticMeshActor</span></div>
+      <div class="olrow sel" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Cliff_Edge_A</span><span class="ty">StaticMeshActor</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Small_07</span><span class="ty">StaticMeshActor</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic mesh">▣</span>Rock_Small_08</span><span class="ty">StaticMeshActor</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l1"><span class="ic fold">▾</span>Lighting</span><span class="ty">Folder</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic lit">☀</span>DirectionalLight</span><span class="ty">DirectionalLight</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic misc">◐</span>SkyAtmosphere</span><span class="ty">SkyAtmosphere</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic lit">☁</span>SkyLight</span><span class="ty">SkyLight</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l1"><span class="ic fold">▾</span>Gameplay</span><span class="ty">Folder</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic misc">⚑</span>PlayerStart</span><span class="ty">PlayerStart</span></div>
+      <div class="olrow" style="grid-template-columns:24px 1fr 110px"><span class="eye">◉</span><span class="l2"><span class="ic misc">▢</span>PostProcessVolume</span><span class="ty">PostProcessVol…</span></div>
+      <div class="olfoot">14 actors (3 selected)</div>
+    </div>
+
+    <div class="menu" id="actMenu" style="left:130px;top:186px;width:186px">
+      <div class="mi"><span class="mic">✎</span>Edit SM_Rock_Large</div>
+      <div class="mi"><span class="mic">⌕</span>Browse to Asset<span class="kb">Ctrl+B</span></div>
+      <div class="sep"></div>
+      <div class="mi open" id="miDreamA"><span class="mic"><span class="dream-mark sm"></span></span>Dream<span class="sub">▸</span></div>
+      <div class="sep"></div>
+      <div class="mi"><span class="mic"></span>Select<span class="sub">▸</span></div>
+      <div class="mi"><span class="mic"></span>Transform<span class="sub">▸</span></div>
+      <div class="mi"><span class="mic"></span>Snapping<span class="sub">▸</span></div>
+      <div class="sep"></div>
+      <div class="mi"><span class="mic"></span>Rename<span class="kb">F2</span></div>
+      <div class="mi"><span class="mic"></span>Duplicate<span class="kb">Ctrl+D</span></div>
+      <div class="mi"><span class="mic"></span>Delete<span class="kb">Delete</span></div>
+    </div>
+    <div class="menu" id="dreamMenuA" data-anchor="#miDreamA" data-at="tr" data-dx="3" data-dy="-5" style="width:196px">
+      <div class="mi"><span class="mic">⧉</span>Copy as Python <span class="cnt">(3 actors)</span></div>
+      <div class="mi" id="miInsA"><span class="mic">⤓</span>Insert into Dream</div>
+      <div class="sep"></div>
+      <div class="mi open" id="miRunSel"><span class="mic">▶</span>Run on selection<span class="sub">▸</span></div>
+    </div>
+    <div class="menu" id="runMenu" data-anchor="#miRunSel" data-at="tr" data-dx="3" data-dy="-5" style="width:226px">
+      <div class="h">Shelf items · 3 actors</div>
+      <div class="mi"><span class="mic">▶</span>Fix LODs<span class="scope project">project</span></div>
+      <div class="mi on" id="miSnap"><span class="mic">▶</span>Snap to floor<span class="scope studio">studio</span></div>
+      <div class="mi"><span class="mic">▶</span>Randomize yaw…<span class="scope user">user</span></div>
+    </div>
+    <div class="tip" id="runTip" data-anchor="#runMenu" data-at="bl" data-dx="-130" data-dy="6" style="width:356px">
+      <b>Snap to floor</b> <span class="dim">· studio library · v2.0 · hash matches</span><br>
+      Runs Isolated with <code>sel</code> bound to the 3 actors, as one undo step <code>Dream: Snap to floor #19</code>.
+    </div>
+  </div>
+
+  <!-- Content Browser asset context menu -->
+  <div class="inset" style="width:766px;height:470px">
+    <div class="inset-cap"><b>Content Browser</b> · right-click on three selected static meshes</div>
+    <div class="frame" style="width:330px;height:448px">
+      <div class="mtabs"><div class="mtab active">Content Browser 1<span class="x">×</span></div></div>
+      <div class="cbbar"><div class="tb"><span class="add">＋</span>Add</div><div class="tb">⤒ Import</div><span class="cbpath">… › <b>Rocks</b></span></div>
+      <div class="cbsearch"><span style="color:var(--text-lo)">▼ Filters</span><div class="olsearch" style="color:var(--text)">⌕&nbsp; SM_Rock</div></div>
+      <div class="tiles c3">
+        <div class="tile sel"><div class="th cl"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Cliff</div><div class="ty">Static Mesh</div></div>
+        <div class="tile sel"><div class="th r2"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Large</div><div class="ty">Static Mesh</div></div>
+        <div class="tile sel"><div class="th r3"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Small</div><div class="ty">Static Mesh</div></div>
+        <div class="tile"><div class="th r4"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Tall</div><div class="ty">Static Mesh</div></div>
+        <div class="tile"><div class="th r5"></div><div class="stripe st-mesh"></div><div class="nm">SM_Rock_Wedge</div><div class="ty">Static Mesh</div></div>
+      </div>
+      <div class="olfoot">5 items (3 selected) · filtered</div>
+    </div>
+
+    <div class="menu" id="assetMenu" style="left:160px;top:92px;width:196px">
+      <div class="h">Common</div>
+      <div class="mi"><span class="mic">✎</span>Edit…</div>
+      <div class="mi"><span class="mic"></span>Rename<span class="kb">F2</span></div>
+      <div class="mi"><span class="mic"></span>Duplicate<span class="kb">Ctrl+D</span></div>
+      <div class="mi"><span class="mic">⎙</span>Save<span class="kb">Ctrl+S</span></div>
+      <div class="mi"><span class="mic"></span>Delete<span class="kb">Delete</span></div>
+      <div class="h">References</div>
+      <div class="mi"><span class="mic"></span>Copy Reference</div>
+      <div class="mi"><span class="mic"></span>Copy File Path</div>
+      <div class="sep"></div>
+      <div class="mi"><span class="mic"></span>Asset Actions<span class="sub">▸</span></div>
+      <div class="mi open" id="miDreamB"><span class="mic"><span class="dream-mark sm"></span></span>Dream<span class="sub">▸</span></div>
+    </div>
+    <div class="menu" id="dreamMenuB" data-anchor="#miDreamB" data-at="tr" data-dx="3" data-dy="-5" style="width:196px">
+      <div class="mi"><span class="mic">⧉</span>Copy as Python <span class="cnt">(3 assets)</span></div>
+      <div class="mi"><span class="mic">⤓</span>Insert into Dream</div>
+      <div class="sep"></div>
+      <div class="mi open" id="miRunSelB"><span class="mic">▶</span>Run on selection<span class="sub">▸</span></div>
+    </div>
+    <div class="menu" id="scriptsMenu" data-anchor="#miRunSelB" data-at="tr" data-dx="3" data-dy="-5" style="width:200px">
+      <div class="h">Shelf items · 3 assets</div>
+      <div class="mi on"><span class="mic">▶</span>Fix LODs<span class="scope project">project</span></div>
+      <div class="mi"><span class="mic">▶</span>Set LOD group…<span class="scope studio">studio</span></div>
+      <div class="mi"><span class="mic">▶</span>Batch Rename…<span class="scope studio">studio</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ insets: Details property, and the Dream tab closed ============ -->
+<div class="insets">
+  <div class="inset" style="width:600px;height:400px">
+    <div class="inset-cap"><b>Details</b> · right-click a property</div>
+    <div class="frame dp" style="width:300px;height:306px">
+      <div class="mtabs"><div class="mtab active">Details<span class="x">×</span></div></div>
+      <div class="dhd"><b>Cliff_Edge_A</b><span class="dim">StaticMeshComponent0 (StaticMeshComponent)</span></div>
+      <div class="cat">▾ Lighting</div>
+      <div class="prow sel" id="propRow"><span>Cast Shadow</span><span class="val"><span class="chk on"></span></span></div>
+      <div class="prow"><span>Indirect Lighting Int…</span><span class="val">1.0</span></div>
+      <div class="prow"><span>Light as if Static</span><span class="val"><span class="chk"></span></span></div>
+      <div class="cat">▾ Transform</div>
+      <div class="prow"><span>Mobility</span><span class="val"><span class="seg3"><span class="on">Static</span><span>Stationary</span><span>Movable</span></span></span></div>
+      <div class="prow"><span>Location</span><span class="val">X 1210 · Y −380 · Z 0</span></div>
+    </div>
+    <div class="menu" id="rowMenu" style="left:140px;top:130px;width:190px">
+      <div class="h">Edit</div>
+      <div class="mi"><span class="mic"></span>Copy<span class="kb">Ctrl+C</span></div>
+      <div class="mi"><span class="mic"></span>Paste<span class="kb">Ctrl+V</span></div>
+      <div class="mi"><span class="mic"></span>Reset to Default</div>
+      <div class="sep"></div>
+      <div class="mi on" id="miCopyProp"><span class="mic"><span class="dream-mark sm"></span></span>Copy as Python</div>
+    </div>
+    <div class="clip" id="copyProp" style="left:140px;top:262px;width:456px">
+      <div class="ch">Clipboard · long lines wrapped for display</div>
+      <div class="cl">obj = unreal.find_object(None, <span style="color:var(--str)">"/Game/Maps/Lvl_Downtown.Lvl_Downtown:PersistentLevel.Cliff_Edge_A.StaticMeshComponent0"</span>)  <span class="m"># Cliff_Edge_A</span></div>
+      <div class="cl">obj.set_editor_property(<span style="color:var(--str)">"cast_shadow"</span>, True)</div>
+      <div class="cl"><span class="m"># obj.get_editor_property("cast_shadow")</span></div>
+      <div class="dim" style="font-size:11px;margin-top:3px">Pasted on its own it runs: the first line binds <code style="font-family:var(--mono)">obj</code>.</div>
+    </div>
+  </div>
+
+  <div class="inset" style="width:932px">
+    <div class="inset-cap"><b>Dream tab closed</b> · reopen it from Tools; the status-bar item stays</div>
+    <div class="frame" style="position:relative">
+      <div class="mbar"><span class="ue-logo" style="width:16px;height:16px"></span><span>File</span><span>Edit</span><span>Window</span><span class="open" id="toolsOpen">Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+      <div class="vp2" id="vp">
+        <div class="chipcol" id="stateChips">
+          <div class="cap">The same item in other states</div>
+          <div class="dream-item running"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Running 41 s <span class="sep">·</span> Run #22 <span class="sep">·</span> 312 / 1,204 <span class="stopchip">■ Stop</span><span class="lbl">Live (docked) Preview only</span></div>
+          <div class="dream-item task"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Task running <span class="sep">·</span> 40 / 300 <span class="stopchip">■ Stop</span></div>
+          <div class="dream-item error"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Run #23 error<span class="lbl">click opens the traceback</span></div>
+          <div class="dream-item"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Run #25 cancelled<span class="lbl">click opens the run block</span></div>
+          <div class="dream-item"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Idle <span class="sep">·</span> last run ok 0.4 s</div>
+        </div>
+      </div>
+      <div class="status uebar">
+        <span class="sb">▤ Content Drawer</span><span class="sb">▦ Output Log</span>
+        <div class="spacer"></div>
+        <span class="dream-item hov" id="pyStatusC"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Idle <span class="sep">·</span> last run ok 0.21 s</span>
+        <span class="sb">Derived Data ▾</span><span class="sb"><span class="ok">✓</span> All Saved</span>
+      </div>
+      <div class="menu" id="toolsMenu" data-anchor="#toolsOpen" data-at="bl" data-dx="-6" data-dy="4" style="width:236px">
+        <div class="mi on"><span class="mic"><span class="dream-mark sm"></span></span>Dream Python Editor</div>
+        <div class="mi"><span class="mic"><span class="dream-mark sm"></span></span>Dream Shelf</div>
+        <div class="sep"></div>
+        <div class="h">Dream shelf · CitySample</div>
+        <div class="mi"><span class="mic">▶</span>Batch Rename<span class="scope studio">studio</span></div>
+        <div class="mi"><span class="mic">▶</span>Fix LODs<span class="scope project">project</span></div>
+        <div class="sep"></div>
+        <div class="mi"><span class="mic"></span>Find in Blueprints</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#dragDeco" data-at="br" data-dx="-6" data-dy="14"><div class="num">1</div></div>
+<div class="callout" data-for="#dropTag" data-at="r" data-dx="18"><div class="num">2</div></div>
+<div class="callout" data-for="#insTip" data-at="tl" data-dx="-4" data-dy="4"><div class="num">3</div></div>
+<div class="callout" data-for="#replAliases" data-at="r" data-dx="18"><div class="num">4</div></div>
+<div class="callout" data-for="#echoEq" data-at="r" data-dx="22" data-dy="0"><div class="num">5</div></div>
+<div class="callout" data-for="#dreamMenuA" data-at="bl" data-dx="16" data-dy="14"><div class="num">6</div></div>
+<div class="callout" data-for="#runTip" data-at="tr" data-dx="-4" data-dy="4"><div class="num">7</div></div>
+<div class="callout" data-for="#miInsA" data-at="r" data-dx="-16"><div class="num">8</div></div>
+<div class="callout" data-for="#copyProp" data-at="tr" data-dx="-4" data-dy="4"><div class="num">9</div></div>
+<div class="callout" data-for="#toolsMenu" data-at="tr" data-dx="2" data-dy="2"><div class="num">10</div></div>
+<div class="callout" data-for="#stateChips" data-at="tr" data-dx="-4" data-dy="4"><div class="num">11</div></div>
+<div class="callout" data-for="#pyStatusC" data-at="l" data-dx="-16"><div class="num">12</div></div>
+
+<div class="legend l9">
+  <div><span class="num">1</span><span><b>Drag assets into code.</b> The drag label says what the drop will insert: <code>unreal.load_asset("/Game/Path/Asset.Asset")</code> for each asset. Holding Alt inserts the soft object path as a string instead.</span></div>
+  <div><span class="num">2</span><span><b>A multi-selection becomes a list.</b> Three assets drop as a list of three load calls, tinted until the next edit. It is one ordinary edit, so Ctrl+Z in the buffer removes it.</span></div>
+  <div><span class="num">3</span><span><b>Ctrl+Shift+V</b> inserts the <code>sel = …get_selected_level_actors()</code> line at the caret. It is your own assignment, so the alias rule treats <code>sel</code> as yours from then on, and Variables and the hover then show “sel: your value since Run #N; no longer refreshed”.</span></div>
+  <div><span class="num">4</span><span><b>Selection aliases.</b> <code>sel</code>, <code>sel_assets</code>, <code>world</code> and <code>subsys(cls)</code> are written into the Session only while idle, and only if the name is absent or still holds what Dream wrote. Hover says “selection as of” a time.</span></div>
+  <div><span class="num">5</span><span><b>Actors as code.</b> An actor drops or copies as <code>unreal.find_object(None, "&lt;full object path&gt;")  # &lt;label&gt;</code>, never as a label lookup, so it resolves to the same object as <code>sel[2]</code>.</span></div>
+  <div><span class="num">6</span><span><b>One Dream submenu.</b> The actor and asset context menus each get a single Dream submenu: Copy as Python, Insert into Dream, and Run on selection ▸ with the shelf items that accept this selection.</span></div>
+  <div><span class="num">7</span><span><b>Run on selection.</b> Each shelf item shows its tier. It runs Isolated with <code>sel</code> (or <code>sel_assets</code>) bound in its fresh namespace, as one undo step named after the item.</span></div>
+  <div><span class="num">8</span><span><b>Copy as Python and Insert into Dream.</b> Both produce the same code; Insert puts it at the caret of the active Dream buffer. Several actors become a list of <code>find_object</code> calls, one per line, each commented with its label, sanitised to one line of at most 80 characters.</span></div>
+  <div><span class="num">9</span><span><b>Details property.</b> Copy as Python on a property row gives text that runs on its own: <code>obj = unreal.find_object(None, "&lt;path&gt;")  # &lt;label&gt;</code>, then the <code>set_editor_property</code> line with the current value as a literal, then the getter as a comment.</span></div>
+  <div><span class="num">10</span><span><b>Tools ▸ Dream Python Editor</b> opens the tab (mirrored under Window). Tools also lists Dream Shelf and the shelf items registered for the Tools menu.</span></div>
+  <div><span class="num">11</span><span><b>Status-bar patterns.</b> Mark · state · detail · [Stop]: <code>Running 41 s · Run #22 · 312 / 1,204</code>, <code>Task running · 40 / 300</code>, <code>Run #23 error</code> (a click opens the tab at the traceback), <code>Run #24 not executed</code> and <code>Run #25 cancelled</code> (a click opens the run block), and Idle with the last result. The Running pattern is live only in Live (docked) Preview; during a Run-window run the item keeps its last painted text.</span></div>
+  <div><span class="num">12</span><span><b>Visible with the tab closed.</b> The item is painted whenever the editor paints, so it reports shelf and menu runs even when the Dream tab is not open.</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+<script>
+// Draw the drag trajectory from the selected Content Browser tile to the drag ghost (page-specific).
+// It runs along the free right edge of the left column, then along blank line 8 so it crosses no code.
+(function () {
+  const host = document.querySelector('.canvas').getBoundingClientRect();
+  const a = document.getElementById('tileCliff').getBoundingClientRect();
+  const l8 = document.getElementById('ln8').getBoundingClientRect();
+  const g = document.getElementById('gstack').getBoundingClientRect();
+  const x1 = a.right - 22 - host.left, y1 = a.top + 10 - host.top;
+  const yL = l8.top + l8.height / 2 - host.top;
+  const xE = g.left + 6 - host.left, yE = g.top + g.height - 16 - host.top;
+  const svg = document.getElementById('dragPath');
+  svg.setAttribute('width', host.width); svg.setAttribute('height', host.height);
+  document.getElementById('dragD').setAttribute('d',
+    `M${x1},${y1} C${x1 + 6},${yL + 70} ${x1 + 24},${yL} ${x1 + 90},${yL} L${xE - 46},${yL} C${xE - 20},${yL} ${xE - 10},${yE} ${xE},${yE}`);
+})();
+</script>
+</body></html>

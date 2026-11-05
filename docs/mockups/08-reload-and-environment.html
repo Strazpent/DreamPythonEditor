@@ -1,0 +1,330 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x1444">
+<title>Reload and environment</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .win { height: 1072px; }
+  .side { width: 196px; flex: none; }
+  .env { width: 700px; flex: none; min-width: 0; overflow: hidden; }
+  .outarea { height: 556px; }
+  .tree .root-path { font-size: 10.5px; color: var(--text-lo); padding-left: 22px; }
+  .tree .root-badge { padding-left: 22px; }
+  .badge.reload { background: #123d2a; color: #9be8bf; }
+
+  /* save toast (UE notification style) */
+  .toast { position: absolute; right: 16px; top: 46px; width: 316px; z-index: 10; background: #2b2b2b; border: 1px solid #4a4a4a;
+           border-left: 3px solid var(--warn); border-radius: 4px; box-shadow: 0 8px 26px rgba(0,0,0,.65); padding: 7px 10px; font: 12px/1.45 var(--ui); }
+  .toast .h { color: var(--text-hi); font-weight: 600; }
+  .toast .d { color: var(--text); }
+  .toast .w { color: var(--warn); }
+  .toast .a { color: var(--info); text-decoration: underline; margin-right: 12px; }
+
+  /* reload report inside Output */
+  .out .rr { padding: 4px 10px 8px; font: 12px/1.4 var(--ui); white-space: normal; color: var(--text); }
+  .out .rr div { padding: 0; white-space: normal; }
+  .rr .sum { color: var(--text); margin: 2px 0 4px; }
+  .rr .sum b { color: var(--text-hi); font-weight: 600; }
+  .rr table { border-collapse: collapse; width: 100%; }
+  .rr th { text-align: left; color: var(--text-lo); font: 600 10px var(--ui); text-transform: uppercase; letter-spacing: .3px; padding: 3px 8px; border-bottom: 1px solid #2a2a2a; }
+  .rr td { padding: 0 8px; height: 21px; border-bottom: 1px solid #1d1d1d; white-space: nowrap; }
+  .rr td.mono { font: 11.5px var(--mono); color: var(--text-hi); }
+  .rr td.num { color: var(--text-lo); width: 18px; }
+  .rr td.t { text-align: right; font: 11.5px var(--mono); color: var(--text); }
+  .rr .okc { color: var(--ok); } .rr .lo { color: var(--text-lo); }
+  .rr .timing { color: var(--text-lo); margin: 5px 0 2px; font-size: 11.5px; }
+  .rr .timing b { color: var(--text); font-weight: 600; }
+  .rr code, .sw code { font: 11.5px var(--mono); color: var(--text-hi); background: #2a2a2a; padding: 0 4px; border-radius: 2px; }
+  .sw { border: 1px solid #4d4214; border-left: 3px solid var(--warn); background: #1b1810; border-radius: 3px; padding: 6px 10px 7px; margin-top: 7px; }
+  .out .sw .hd { color: #ffd54f; font-weight: 600; }
+  .out .sw .ref { font: 11.5px/18px var(--mono); color: var(--text); padding-left: 14px; }
+  .sw .ref .old { color: #e0a96d; }
+  .sw .why { color: var(--text); margin-top: 2px; }
+  .out .sw .acts { margin-top: 5px; display: flex; gap: 6px; }
+  .sbtn { padding: 1px 10px; border-radius: 3px; background: var(--bg5); color: var(--text-hi); font: 11px/18px var(--ui); border: 1px solid #4a4a4a; white-space: nowrap; }
+  .sbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* environment panel */
+  .envbar { height: 32px; background: #1a1a1a; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 6px; padding: 0 8px; }
+  .envbar .search { min-width: 210px; height: 22px; font-size: 11px; }
+  .esec { display: flex; align-items: center; gap: 8px; padding: 6px 10px 3px; color: var(--text-lo); font: 600 10.5px var(--ui); text-transform: uppercase; letter-spacing: .4px; }
+  .esec .ttl { color: #a8c7ee; }
+  .esec .meta { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11px; }
+  .kv { display: grid; grid-template-columns: 104px 1fr; padding: 0 10px; font-size: 11.5px; }
+  .kv > span { height: 19px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .kv > span:nth-child(odd) { color: var(--text-lo); }
+  .kv .mono { font: 11px var(--mono); color: var(--text-hi); }
+  .et { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+  .et td { height: 19px; padding: 0 6px; border-bottom: 1px solid #1d1d1d; white-space: nowrap; }
+  .et td:first-child { padding-left: 10px; }
+  .et th { text-align: left; color: var(--text-lo); font: 600 10px var(--ui); text-transform: uppercase; letter-spacing: .3px; padding: 2px 6px; border-bottom: 1px solid #2a2a2a; }
+  .et th:first-child { padding-left: 10px; }
+  .et .path { font: 11px var(--mono); color: var(--text); }
+  .et .pkg { font: 11.5px var(--mono); color: var(--text-hi); }
+  .et .idx { color: #5a5a5a; width: 14px; text-align: right; }
+  .et .lo { color: var(--text-lo); }
+  .et .okc { color: var(--ok); } .et .wc { color: var(--warn); } .et .ec { color: var(--err); }
+  .et .lnk { color: var(--info); text-decoration: underline; }
+  .et tr.bad td { background: rgba(255,82,82,.07); }
+  .og { font: 600 9.5px/15px var(--ui); padding: 0 6px; border-radius: 3px; white-space: nowrap; display: inline-block; }
+  .og.engine { background: #353535; color: #d6d6d6; }
+  .og.project { background: #0b3a6a; color: #bfe0ff; }
+  .og.plugin { background: #3d2a5a; color: #dcc6ff; }
+  .og.uepp { background: #0d4040; color: #9ff0e6; }
+  .og.user { background: #4a3a12; color: #ffe08a; }
+  .pkgacts { display: flex; gap: 6px; padding: 4px 10px 2px; align-items: center; }
+  .dr { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; padding: 3px 10px; border-bottom: 1px solid #1d1d1d; min-height: 25px; font-size: 11.5px; }
+  .dr .ic { width: 16px; height: 16px; border-radius: 50%; font: 700 10px/16px var(--ui); text-align: center; color: #111; }
+  .ic.ok { background: var(--ok); } .ic.warn { background: var(--warn); } .ic.err { background: var(--err); color: #fff; }
+  .dr b { color: var(--text-hi); font-weight: 600; margin-right: 6px; }
+  .dr .d { color: var(--text-lo); }
+  .dr .d code { font: 11px var(--mono); color: var(--text); }
+  .dr.warn { background: rgba(255,179,0,.06); } .dr.err { background: rgba(255,82,82,.08); }
+  .dr .acts { display: flex; gap: 6px; }
+  .legend code { font: 11.5px var(--mono); color: var(--text-hi); }
+  .rr .acts2 { display: flex; gap: 6px; align-items: center; margin-top: 7px; }
+  .rr .acts2 .lo { font-size: 11px; }
+  .nodream { margin: 2px 10px 0; padding: 3px 8px; font-size: 11px; color: #a8c7ee; background: #14202e; border: 1px solid #22344a; border-radius: 3px; }
+  .nodream code { font: 10.5px var(--mono); color: var(--text-hi); }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — deep reload, and the Environment panel</div>
+<div class="subtitle-strip">J3: edit a studio module, save, and the package reloads in dependency order with a report of what is still stale. J8: on a fresh machine, see what the interpreter sees and let the doctor say what to fix.</div>
+
+<div class="win">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    <div class="docktab">Content Browser<span class="x">×</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+    <div class="tb"><span class="ico">⏵</span>Run Cell</div>
+    <div class="tb"><span class="ico">⏹</span><span style="color:var(--text-lo)">Stop</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="ico">🐞</span>Debug</div>
+    <div class="tb"><span class="ico">⟳</span>Reload Package ▾</div>
+    <div class="combo" id="entryCombo">Entry point (Ctrl+F5): <b style="color:var(--text-hi);font-family:var(--mono);font-weight:400">studio_tools.ui.main</b> <span style="color:var(--text-lo)">· reload first</span> ▾</div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="chk on"></span>One undo step per run</div>
+    <div class="spacer"></div>
+    <div class="search">⌕&nbsp; Search everything (Shift Shift)</div>
+    <div class="tb">⚙</div>
+  </div>
+
+  <div class="row grow">
+    <!-- left: explorer -->
+    <div class="panel side">
+      <div class="panel-head"><div class="tabs"><span class="on">Files</span><span>Snippets</span><span>Outline</span></div></div>
+      <div class="tree">
+        <div class="ico-open"><b>Project</b> <span class="dim">Content/Python</span></div>
+        <div class="ind1">📄 init_unreal.py</div>
+        <div class="ind1 ico-folder">tools</div>
+        <div class="ico-open" style="margin-top:6px"><b>Dev root</b></div>
+        <div class="root-path">D:\dev\pipeline\python</div>
+        <div class="root-badge"><span class="badge reload" id="rootBadge">⟳ Reload on save · opted in</span></div>
+        <div class="ind1 ico-open">studio_tools</div>
+        <div class="ind2">📄 __init__.py</div>
+        <div class="ind2">📄 importer.py</div>
+        <div class="ind2 sel">📄 naming.py</div>
+        <div class="ind2">📄 ui.py</div>
+        <div class="ico-open" style="margin-top:6px"><b>Studio</b> <span class="dim">\\studio\pipeline\ue</span></div>
+        <div class="ind1 ico-folder">studio_core <span class="badge blue" style="margin-left:auto">read-only</span></div>
+        <div class="ind1 ico-folder">shotgun_api3</div>
+        <div class="ico-open" style="margin-top:6px"><b>Untitled</b> <span class="dim">journaled</span></div>
+        <div class="ind1">📝 Untitled-1 <span class="dim">· 4 min ago</span></div>
+        <div class="ico-folder" style="margin-top:6px"><b>Recent</b></div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- center: the output area on top (PO-01), then the code area -->
+    <div class="col grow">
+      <div class="panel outarea">
+        <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div>
+          <div class="spacer"></div><span style="font-weight:400;text-transform:none;color:var(--text-lo)">Filter ▾ &nbsp; ⌕ &nbsp; Clear</span></div>
+        <div class="out grow">
+          <div class="hdr"><b>▶ Run #31</b> REPL <span class="ts">14:58:02 · ok</span></div>
+          <div class="echo">from studio_tools.naming import asset_name</div>
+          <div class="echo">imp = studio_tools.importer.BatchImporter("/Game/Props/Wave3")</div>
+          <div class="hdr" id="rrHdr"><b>⟳ Run #33</b> deep reload · studio_tools · on save of naming.py <span class="ts">15:02:11 · 184 ms · ok</span></div>
+          <div class="rr">
+            <div class="sum">Watched root <b>D:\dev\pipeline\python</b> · package <b>studio_tools</b> · purged and re-imported in dependency order: the parent package, then the saved module, then its importers</div>
+            <table id="rrTable">
+              <tr><th></th><th>Module</th><th>Reloaded because</th><th>Unload hook</th><th style="text-align:right">Re-import</th></tr>
+              <tr><td class="num">1</td><td class="mono">studio_tools</td><td>parent package</td><td class="lo">none defined</td><td class="t">3 ms <span class="okc">✓</span></td></tr>
+              <tr><td class="num">2</td><td class="mono">studio_tools.naming</td><td>saved 15:02:10</td><td class="lo">none defined</td><td class="t">9 ms <span class="okc">✓</span></td></tr>
+              <tr><td class="num">3</td><td class="mono">studio_tools.importer</td><td>imports naming</td><td><span class="okc">✓</span> called · 1.2 ms</td><td class="t">52 ms <span class="okc">✓</span></td></tr>
+              <tr><td class="num">4</td><td class="mono">studio_tools.ui</td><td>imports importer, naming</td><td class="lo">none defined</td><td class="t">97 ms <span class="okc">✓</span></td></tr>
+            </table>
+            <div class="timing">Unload hooks <b>1.2 ms</b> · purge <b>0.6 ms</b> · re-import <b>161 ms</b> · stale scan <b>21 ms</b>. Never touched: <code>unreal</code>, the stdlib, site-packages, the engine's <code>Content/Python</code>, <code>dream_editor</code>.</div>
+
+            <div class="sw" id="sw1">
+              <div class="hd">⚠ 3 Slate post-tick callbacks still call old <code>studio_tools.ui</code> functions</div>
+              <div class="ref"><span class="old">ui._on_tick</span> (pre-reload) ← <span class="f">register_slate_post_tick_callback</span>, ui.py:48</div>
+              <div class="ref"><span class="old">ui._refresh_badges</span> ×2 (pre-reload) ← <span class="f">register_slate_post_tick_callback</span>, ui.py:61</div>
+              <div class="why">Each reload adds another copy. Add <code>__dream_unload__()</code> to <code>ui.py</code> and call <code>unreal.unregister_slate_post_tick_callback(handle)</code> in it.</div>
+              <div class="acts"><span class="sbtn primary">Insert unload hook in ui.py</span><span class="sbtn">Go to ui.py:48</span></div>
+            </div>
+
+            <div class="sw" id="sw2">
+              <div class="hd">⚠ 2 stale Session names: <code>asset_name</code>, <code>imp</code></div>
+              <div class="ref"><span class="old">asset_name</span> → function from the old <span class="t">studio_tools.naming</span> (Run #31)</div>
+              <div class="ref"><span class="old">imp</span> → instance of the old <span class="t">BatchImporter</span>; <span class="f">isinstance</span> against the new class is False</div>
+              <div class="acts" id="rrActs"><span class="sbtn primary">Reset session</span><span class="sbtn">Show holders</span><span style="color:var(--text-lo);font-size:11px;align-self:center">or Ctrl+F5 to reload and call the entry point</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="etabs">
+        <div class="etab active"><span class="lang">PY</span>naming.py<span class="x">×</span></div>
+        <div class="etab"><span class="lang">PY</span>importer.py<span class="x">×</span></div>
+        <div class="etab"><span class="lang">PY</span>ui.py<span class="x">×</span></div>
+        <div class="etab"><span class="lang">PY</span>Untitled-1<span class="x">×</span></div>
+      </div>
+      <div class="breadcrumb">D:\dev\pipeline\python › studio_tools › naming.py › <span style="color:var(--text)">PREFIXES</span><div class="spacer"></div><span>Saved 15:02:10</span></div>
+      <div class="code grow">
+        <div class="gutter">
+          <div>1</div><div>2</div><div>3</div><div class="fold">4</div><div>5</div><div>6</div><div>7</div><div>8</div><div class="cur">9</div><div>10</div><div>11</div><div>12</div><div class="fold">13</div><div>14</div><div>15</div><div>16</div><div>17</div>
+        </div>
+        <div class="lines">
+<div><span class="s">"""Asset naming rules for studio_tools."""</span></div>
+<div><span class="c">import</span> unreal</div>
+<div></div>
+<div>PREFIXES <span class="o">=</span> {</div>
+<div>    <span class="s">"StaticMesh"</span>: <span class="s">"SM_"</span>,</div>
+<div>    <span class="s">"SkeletalMesh"</span>: <span class="s">"SK_"</span>,</div>
+<div>    <span class="s">"Texture2D"</span>: <span class="s">"T_"</span>,</div>
+<div>    <span class="s">"MaterialInstanceConstant"</span>: <span class="s">"MI_"</span>,</div>
+<div class="curline">    <span class="s">"NiagaraSystem"</span>: <span class="s">"NS_"</span>,<span class="cursor"></span></div>
+<div>}</div>
+<div></div>
+<div></div>
+<div><span class="k">def</span> <span class="f">asset_name</span>(<span class="p">data</span>: unreal.<span class="t">AssetData</span>) <span class="o">-&gt;</span> <span class="t">str</span>:</div>
+<div>    cls <span class="o">=</span> <span class="t">str</span>(data.asset_class_path.asset_name)</div>
+<div>    name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</div>
+<div>    prefix <span class="o">=</span> PREFIXES.<span class="f">get</span>(cls, <span class="s">""</span>)</div>
+<div>    <span class="c">return</span> name <span class="c">if</span> name.<span class="f">startswith</span>(prefix) <span class="c">else</span> prefix <span class="o">+</span> name</div>
+        </div>
+        <div class="toast" id="toast">
+          <div class="h">⟳ Saved naming.py · deep reload of studio_tools</div>
+          <div class="d">4 modules in 184 ms · <span class="w">⚠ 2 stale Session names</span></div>
+          <div style="margin-top:3px"><span class="a">Show report</span><span class="a">Go to ui.py</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- right: environment -->
+    <div class="panel env">
+      <div class="panel-head"><div class="tabs"><span>Variables</span><span>Watch</span><span class="on">Environment</span></div></div>
+      <div class="envbar">
+        <span class="sbtn primary">🩺 Run doctor</span>
+        <span class="sbtn">⟳ Refresh</span><span class="sbtn">Copy as text</span>
+        <div class="spacer"></div><div class="search">⌕&nbsp; Filter paths, packages</div>
+      </div>
+
+      <div class="esec"><span class="ttl" id="interpTtl">Interpreter</span><div class="spacer"></div><span class="meta">read from <code style="font-family:var(--mono)">sys</code> and Project Settings › Plugins › Python</span></div>
+      <div class="kv" id="interp">
+        <span>Python</span><span><b style="color:var(--text-hi)">3.11.8</b> · embedded CPython · 64-bit · PythonScriptPlugin</span>
+        <span>Executable</span><span class="mono">C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\ThirdParty\Python3\Win64\python.exe</span>
+        <span>Isolation</span><span>Isolated environment <b style="color:var(--text-hi)">on</b> <span style="color:var(--text-lo)">· PYTHON* variables and the user site are ignored</span></span>
+        <span>Developer Mode</span><span><span style="color:var(--warn)">⚠ on</span> (project setting) · restrictive mode off</span>
+      </div>
+
+      <div class="esec"><span class="ttl" id="pathTtl">sys.path</span><div class="spacer"></div><span class="meta">13 entries in import order · hover for full path</span></div>
+      <table class="et" id="pathTable">
+        <tr><td class="idx">▸</td><td class="path">python311.zip, DLLs, Lib, Lib\site-packages</td><td><span class="og engine">engine</span></td><td class="lo">0–3 · standard library</td></tr>
+        <tr><td class="idx">4</td><td class="path">C:\Users\mkato\Documents\UnrealEngine\Python</td><td><span class="og user">user</span></td><td class="wc">⚠ shadows yaml</td></tr>
+        <tr><td class="idx">5</td><td class="path">Engine\…\PythonScriptPlugin\Content\Python</td><td><span class="og engine">engine</span></td><td class="lo">unreal_core, remote_execution</td></tr>
+        <tr><td class="idx">6</td><td class="path">CitySample\Content\Python</td><td><span class="og project">project</span></td><td class="lo">init_unreal.py, tools</td></tr>
+        <tr><td class="idx">7</td><td class="path">CitySample\Plugins\StudioPipeline\Content\Python</td><td><span class="og plugin">plugin</span></td><td class="lo">init_unreal.py</td></tr>
+        <tr><td class="idx">8</td><td class="path">CitySample\Plugins\DreamPythonEditor\Content\Python</td><td><span class="og plugin">plugin</span></td><td class="lo">dream_editor · no init_unreal.py</td></tr>
+        <tr><td class="idx">9</td><td class="path">CitySample\Intermediate\PipInstall\Lib\site-packages</td><td><span class="og project">project</span></td><td class="lo">pip · 18 packages</td></tr>
+        <tr><td class="idx">10</td><td class="path">D:\dev\pipeline\python</td><td><span class="og uepp">UE_PYTHONPATH</span></td><td><span class="badge reload">⟳ watched</span> <span class="lo">studio_tools</span></td></tr>
+        <tr><td class="idx">11</td><td class="path">\\studio\pipeline\ue\python</td><td><span class="og uepp">UE_PYTHONPATH</span></td><td class="lo">read-only · studio_core</td></tr>
+      </table>
+
+      <div class="esec"><span class="ttl" id="pkgTtl">Packages</span><div class="spacer"></div><span class="meta">importable now, first match on sys.path wins</span></div>
+      <table class="et" id="pkgTable">
+        <tr><th>Package</th><th>Version</th><th>From</th><th>Status</th></tr>
+        <tr><td class="pkg">studio_tools</td><td>2.4.0.dev3</td><td><span class="og uepp">UE_PYTHONPATH</span> <span class="path">D:\dev\pipeline\python</span></td><td class="okc">editable · reloaded 15:02</td></tr>
+        <tr><td class="pkg">studio_core</td><td>3.1.2</td><td><span class="og uepp">UE_PYTHONPATH</span> <span class="path">\\studio\pipeline\ue\python</span></td><td class="lo">read-only</td></tr>
+        <tr><td class="pkg">yaml (PyYAML)</td><td>5.1</td><td><span class="og user">user</span> <span class="path">Documents\UnrealEngine\Python</span></td><td class="wc">⚠ shadows PyYAML 6.0.2</td></tr>
+        <tr class="bad"><td class="pkg">pydantic_core</td><td>2.23.4</td><td><span class="og user">user</span> <span class="path">Documents\UnrealEngine\Python</span></td><td class="ec">✗ cp312 build, needs cp311</td></tr>
+        <tr><td colspan="4" class="lo">▸ 17 more in PipInstall (certifi, requests, numpy, Pillow …)</td></tr>
+      </table>
+
+      <div class="esec"><span class="ttl" id="startTtl">Startup scripts</span><div class="spacer"></div><span class="meta">third-party · from this session's log, editor start 08:52</span></div>
+      <table class="et" id="startTable">
+        <tr><td class="okc" style="width:16px">✓</td><td class="path">CitySample\Content\Python\init_unreal.py</td><td><span class="og project">project</span></td><td class="lo">ok · 0.21 s</td></tr>
+        <tr class="bad"><td class="ec">✗</td><td class="path">StudioPipeline\Content\Python\init_unreal.py</td><td><span class="og plugin">plugin</span></td><td><span class="lnk">line 7</span> <span class="ec">ModuleNotFoundError: pydantic_core</span></td></tr>
+        <tr><td class="okc">✓</td><td class="path">\\studio\pipeline\ue\python\init_unreal.py</td><td><span class="og uepp">UE_PYTHONPATH</span></td><td class="lo">ok · 0.84 s</td></tr>
+      </table>
+      <div class="nodream" id="noDream">Dream ships no <code>init_unreal.py</code>; everything listed here belongs to the project, plugins or studio paths.</div>
+
+      <div class="esec"><span class="ttl" id="docTtl">Environment doctor</span><div class="spacer"></div><span class="meta">ran 15:01:58 · <span style="color:var(--ok)">6 passed</span> · <span style="color:var(--warn)">2 warnings</span> · <span style="color:var(--err)">2 errors</span></span></div>
+      <div id="doctor">
+        <div class="dr"><span class="ic ok">✓</span><span><b>Interpreter</b><span class="d">3.11.8 at the engine path; PYTHONPATH not set, UE_PYTHONPATH adds 2 entries</span></span><span></span></div>
+        <div class="dr warn"><span class="ic warn">!</span><span><b>sys.path</b><span class="d">no duplicates · <code>yaml</code> in the user folder shadows PyYAML 6.0.2</span></span><span class="acts"><span class="sbtn">Show</span></span></div>
+        <div class="dr err"><span class="ic err">✕</span><span><b>Startup script failed</b><span class="d">StudioPipeline <code>init_unreal.py</code> line 7, from this session's log</span></span><span class="acts"><span class="sbtn">Open</span></span></div>
+        <div class="dr err"><span class="ic err">✕</span><span><b>Wrong ABI tag</b><span class="d"><code>pydantic_core</code> is cp312; this engine needs cp311-win_amd64</span></span><span></span></div>
+        <div class="dr warn"><span class="ic warn">!</span><span><b>Developer Mode is on</b><span class="d">the engine rewrites a 47 MB <code>unreal.py</code> at every start; Dream does not need it</span></span><span class="acts"><span class="sbtn">Open setting</span></span></div>
+        <div class="dr"><span class="ic ok">✓</span><span><b>Language-server binaries</b><span class="d">pyrefly and ruff · SHA-256 match the plugin manifest</span></span><span></span></div>
+        <div class="dr"><span class="ic ok">✓</span><span><b>Stubs fresh</b><span class="d">built 08:53 for this engine build · 214 modules</span></span><span></span></div>
+        <div class="dr"><span class="ic ok">✓</span><span><b>Journal folder writable</b><span class="d"><code>%LOCALAPPDATA%\DreamPythonEditor\5.8\CitySample-7c41e2\</code></span></span><span></span></div>
+        <div class="dr" id="polRow"><span class="ic ok">✓</span><span><b>Effective policy</b><span class="d"><code>%ProgramData%\DreamPythonEditor\Policy.json</code> · <code>DREAM_POLICY_PATH</code> · <code>Config/Dream/Policy.json</code></span></span><span class="acts"><span class="sbtn">Inspector</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="ok">● Idle</span>
+    <span>Session</span>
+    <span>Language server <span class="ok">✓</span></span>
+    <span>Ruff <span class="ok">✓</span></span>
+    <span id="statusReload">⟳ studio_tools reloaded 15:02:11 · <span class="warn">⚠ 2 stale Session names</span></span>
+    <div class="spacer"></div>
+    <span>Ln 9, Col 29</span><span>Spaces: 4</span><span>UTF-8 · LF</span><span>Saved 15:02:10</span>
+  </div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#rootBadge" data-at="r" data-dx="16"><div class="num">1</div></div>
+<div class="callout" data-for="#entryCombo" data-at="tr" data-dx="2" data-dy="2"><div class="num">2</div></div>
+<div class="callout" data-for="#rrHdr" data-at="r" data-dx="-22"><div class="num">3</div></div>
+<div class="callout" data-for="#sw1" data-at="tr" data-dx="-20" data-dy="16"><div class="num">4</div></div>
+<div class="callout" data-for="#sw2" data-at="tr" data-dx="-20" data-dy="16"><div class="num">5</div></div>
+<div class="callout" data-for="#interpTtl" data-at="r" data-dx="22"><div class="num">6</div></div>
+<div class="callout" data-for="#pathTtl" data-at="r" data-dx="22"><div class="num">7</div></div>
+<div class="callout" data-for="#startTtl" data-at="r" data-dx="22"><div class="num">8</div></div>
+<div class="callout" data-for="#docTtl" data-at="r" data-dx="22"><div class="num">9</div></div>
+<div class="callout" data-for="#polRow" data-at="r" data-dx="-96"><div class="num">10</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Reload on save is opt-in.</b> Deep reload is manual by default (Reload Package). This dev root has opted in, so saving <code>naming.py</code> reloads its package and a notification gives the result even when Output is hidden.</span></div>
+  <div><span class="num">2</span><span><b>Entry point, Ctrl+F5.</b> The tab binds <code>studio_tools.ui.main</code>; Ctrl+F5 reloads its package and then calls it, so trying a change is one key. F5 stays Debug.</span></div>
+  <div><span class="num">3</span><span><b>Reload report.</b> An output block, numbered like any run, lists each module in dependency order (parent packages first, then the saved module, then its importers), why it reloaded, which <code>__dream_unload__()</code> hooks ran, and the time per step. <code>unreal</code>, the stdlib, site-packages, the engine's <code>Content/Python</code> and <code>dream_editor</code> are never reloaded.</span></div>
+  <div><span class="num">4</span><span><b>Stale callbacks.</b> Old functions still registered with Slate keep running pre-reload code and pile up with each reload. The report names them and offers to insert an unload hook that unregisters them.</span></div>
+  <div><span class="num">5</span><span><b>Stale Session names</b>, meaning names bound to objects from reloaded modules, are listed by name. <b>Reset session</b> clears the Session back to its first-capture keys; <b>Show holders</b> lists what still refers to the old objects.</span></div>
+  <div><span class="num">6</span><span><b>Interpreter.</b> Python version, executable, isolation, Developer Mode and restrictive mode, read live from <code>sys</code> and the plugin settings.</span></div>
+  <div><span class="num">7</span><span><b>sys.path with origins.</b> Every entry in import order, badged engine, project, plugin, UE_PYTHONPATH or user, so you can see why a module resolves where it does. Shadowed modules are flagged.</span></div>
+  <div><span class="num">8</span><span><b>Startup scripts.</b> The third-party <code>init_unreal.py</code> files found on sys.path, in run order, with their result from this session's log. Dream ships none of its own.</span></div>
+  <div><span class="num">9</span><span><b>Environment doctor.</b> Interpreter and version, sys.path duplicates and shadowing, startup-script failures, wrong ABI tags, PYTHONPATH and UE_PYTHONPATH, Developer and restrictive mode, language-server binaries and hashes, stubs, the journal folder and the policy. Dream never changes an engine setting itself; Open setting links to it.</span></div>
+  <div><span class="num">10</span><span><b>Effective policy.</b> The doctor names each policy layer it read: machine <code>%ProgramData%\DreamPythonEditor\Policy.json</code>, studio <code>DREAM_POLICY_PATH</code>, project <code>&lt;Project&gt;/Config/Dream/Policy.json</code>. The machine file counts only when it is owned by Administrators, SYSTEM or TrustedInstaller; otherwise the doctor names the file and its owner. Inspector opens Settings at the layer that set each value.</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+<script>/* Headless Edge lays the page out narrower than the final screenshot width, then resizes.
+   Re-pin the callouts after any resize so markers anchored to right-hand panels stay on target. */
+  function repin() { const s = document.createElement("script"); s.src = "callouts.js"; document.body.appendChild(s); }
+  addEventListener("resize", repin);
+  addEventListener("load", () => setTimeout(repin, 50));
+  [300, 900, 1500].forEach(t => setTimeout(repin, t));</script>
+</body></html>

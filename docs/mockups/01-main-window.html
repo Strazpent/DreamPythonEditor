@@ -1,0 +1,234 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x1716">
+<title>Main window</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .win { height: 1112px; }
+  .side { width: 250px; }
+  .right { width: 300px; }
+  .outarea { height: 462px; }
+  .vars { font: 12px/20px var(--mono); }
+  .vars .r { display: grid; grid-template-columns: 84px minmax(0,1fr); padding: 0 8px; border-bottom: 1px solid #1d1d1d; white-space: nowrap; }
+  .vars .r > span { overflow: hidden; text-overflow: ellipsis; }
+  .vars .r span:first-child { color: var(--param); }
+  .vars .r .ty { color: var(--cls); }
+  .vars .r.sel { background: var(--accent-lo); }
+  .vars .r .al { color: #d7ba7d; }
+  .sec { padding: 6px 8px 2px; color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; }
+  .sec i { font-style: normal; text-transform: none; letter-spacing: 0; }
+  .undorow { margin: 6px 8px 0; padding: 6px 8px; background: #1b1b1b; border: 1px solid #2a2a2a; border-radius: 3px; font-size: 11.5px; line-height: 1.45; }
+  .undorow code { font-family: var(--mono); color: var(--text-hi); font-size: 11px; }
+  .undorow .lo { color: var(--text-lo); }
+  .tb.off { color: #6a6a6a; }
+  .tb.off .pill { color: #5a5a5a; }
+  .out .hdr .act { color: var(--info); text-decoration: underline; }
+  .uestatus { height: 26px; }
+  .panel-head .tabs span .badge { margin: 0 0 0 3px; }
+  .gutter .rt::before { content: "\2716"; position: absolute; left: 8px; top: 0; color: var(--err); font: 700 11px/19px "Segoe UI Symbol", var(--ui); }
+  .cmdbox { background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; padding: 0 8px; color: var(--text-lo); margin-left: 4px; }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — main window, docked as a tab in the Unreal Editor</div>
+<div class="subtitle-strip">Maya Script Editor and Charcoal Editor 2 habits (the output history above the code, line-by-line runs, tabs, the Session namespace) with PyCharm-class code intelligence (completion, inspections, outline, debugger).</div>
+
+<div class="win">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab active" id="dockTab"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    <div class="docktab">Content Browser<span class="x">×</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="tb primary splitrun" id="runBtn"><span class="sr-main"><span class="ico">▶</span>Run <span style="opacity:.7">·</span> <span class="sr-mode" id="runMode">Session</span></span><span class="sr-caret" id="runCaret">▾</span></div>
+    <div class="tb"><span class="ico">⏵</span>Run Cell</div>
+    <div class="tb off"><span class="ico">⏹</span>Stop <span class="pill">Shift+F5</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="ico">🐞</span>Debug <span class="pill">F5</span></div>
+    <div class="tb"><span class="ico">⟳</span>Reload Package</div>
+    <div class="tb-sep"></div>
+    <div class="tb" id="undoToggle"><span class="chk on"></span>One undo step per run</div>
+    <div class="tb"><span class="ico">↶</span>Undo Last Run</div>
+    <div class="tb" id="echoToggle"><span class="chk on"></span>Echo input</div>
+    <div class="spacer"></div>
+    <div class="search">⌕&nbsp; Search everything (Shift Shift)</div>
+    <div class="tb">⚙</div>
+  </div>
+
+  <div class="row grow">
+    <!-- left: explorer, full height beside the output and code areas -->
+    <div class="panel side">
+      <div class="panel-head"><div class="tabs"><span class="on">Files</span><span>Snippets</span><span>Outline</span></div></div>
+      <div class="tree">
+        <div class="ico-open"><b>Project</b> <span class="dim">Content/Python</span></div>
+        <div class="ind1 ico-open">tools</div>
+        <div class="ind2 sel" id="fileRow">📄 batch_rename.py <span class="badge err" style="margin-left:auto">✖ 1</span><span class="badge warn">1</span></div>
+        <div class="ind2">📄 lod_audit.py</div>
+        <div class="ind2">📄 validate_naming.py</div>
+        <div class="ind1">📄 init_unreal.py <span class="dim">· project's own</span></div>
+        <div class="ico-open" style="margin-top:6px"><b>Studio</b> <span class="dim">\\studio\pipeline\ue</span></div>
+        <div class="ind1 ico-folder">studio_core <span class="badge blue" style="margin-left:auto">read-only</span></div>
+        <div class="ind1 ico-folder">shotgrid_bridge</div>
+        <div class="ico-open" style="margin-top:6px"><b>Untitled</b> <span class="dim">journaled</span></div>
+        <div class="ind1">📝 Untitled-1 <span class="dim">· 2 min ago</span></div>
+        <div class="ind1">📝 Untitled-3 <span class="dim">· yesterday</span></div>
+        <div class="ico-folder" style="margin-top:6px"><b>Recent</b></div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- center: the output area on top (PO-01), then the splitter, then the code area -->
+    <div class="col grow">
+      <div class="panel outarea" id="outArea">
+        <div class="panel-head"><div class="tabs" id="outTabs"><span class="on">Output</span><span>REPL</span><span id="probTab">Problems <span class="badge err">✖ 1</span> <span class="badge warn">1</span></span></div>
+          <div class="spacer"></div><span style="font-weight:400;text-transform:none;color:var(--text-lo)">Filter ▾ &nbsp; ⌕ &nbsp; Clear</span></div>
+        <div class="out grow follow">
+          <div class="hdr"><b>▶ Run #13</b> batch_rename.py · cell [1] <span class="ts">12:40:51 · 0.03 s · <span style="color:var(--ok)">ok</span></span></div>
+          <div class="ec"><span class="eln">2</span><span class="egl">›</span>import unreal</div>
+          <div class="ec"><span class="eln">3</span><span class="egl">›</span>assets = unreal.EditorUtilityLibrary.get_selected_asset_data()</div>
+          <div class="ec"><span class="eln">4</span><span class="egl">›</span>print(f"{len(assets)} assets selected")</div>
+          <div class="info">12 assets selected</div>
+          <div class="ec" id="echo5"><span class="eln">5</span><span class="egl">›</span>prefix = "SM_"</div>
+          <div class="hdr" id="run14"><b>▶ Run #14</b> batch_rename.py · cell [2] <span class="ts">12:41:07 · 0.42 s · <span style="color:var(--err)">error</span> · not undoable</span></div>
+          <div class="txnote">asset renames and moves in this run are not undoable · undo history cleared</div>
+          <div class="ec"><span class="eln">8</span><span class="egl">›</span>renamed = 0</div>
+          <div class="ec"><span class="eln">9</span><span class="egl">›</span><span id="echoWith">with unreal.ScopedEditorTransaction("Batch rename"):</span></div>
+          <div class="ec"><span class="eln">10</span><span class="egl">›</span>    for data in assets:</div>
+          <div class="ec"><span class="eln">11</span><span class="egl">›</span>        name = str(data.asset_name)</div>
+          <div class="ec"><span class="eln">12</span><span class="egl">›</span>        if not name.startswith(prefix):</div>
+          <div class="ec"><span class="eln">13</span><span class="egl">›</span>            new_path = f"{data.package_path}/{prefix}{name}"</div>
+          <div class="ec"><span class="eln">14</span><span class="egl">›</span>            assert unreal.EditorAssetLibrary.rename_asset(str(data.package_name), new_path), new_path</div>
+          <div class="err">LogEditorAssetSubsystem: Error: RenameAsset failed: The destination path '/Game/Props/SM_Rock_09' already exists.</div>
+          <div class="err">Traceback (most recent call last):</div>
+          <div class="err">  File <span class="link" id="tbLink">"D:\Projects\CitySample\Content\Python\tools\batch_rename.py", line 14</span>, in &lt;module&gt;</div>
+          <div class="err">AssertionError: /Game/Props/SM_Rock_09</div>
+          <div class="hdr"><b>▶ Run #15</b> REPL <span class="ts">12:41:30 · 0.01 s · <span style="color:var(--ok)">ok</span></span></div>
+          <div class="echo">len(assets)</div>
+          <div class="res"># Result: 12</div>
+        </div>
+        <div class="prompt" id="prompt"><span class="ps">&gt;&gt;&gt;</span><span>[a.asset_name <span class="c">for</span> a <span class="c">in</span> sel_assets][:3]<span class="cursor hollow"></span></span><span class="spacer"></span><span class="pill" id="promptHint">Enter run · Shift+Enter newline · ↑ history</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="codearea">
+        <div class="etabs">
+          <div class="etab active"><span class="lang">PY</span>batch_rename.py<span class="dot"></span></div>
+          <div class="etab"><span class="lang">PY</span>Untitled-1<span class="x">×</span></div>
+          <div class="etab"><span class="lang">PY</span>Untitled-3<span class="x">×</span></div>
+          <div class="etab" style="color:var(--text-lo)">＋</div>
+        </div>
+        <div class="breadcrumb">Content/Python/tools › batch_rename.py › <span style="color:var(--text)">cell [2] Rename</span></div>
+        <div class="code grow">
+          <div class="gutter runlane">
+            <div>1</div><div class="rk-ok">2</div><div class="rk-ok">3</div><div class="rk-ok">4</div><div class="rk-ok">5</div><div>6</div><div>7</div><div class="rk-ok">8</div><div class="fold rk-err">9</div><div class="chg rk-err">10</div><div class="chg rk-err">11</div><div class="chg rk-err">12</div><div class="mod rk-err">13</div><div class="mod rt rk-err">14</div><div class="chg" id="chg15">15</div><div>16</div><div class="cur">17</div>
+          </div>
+          <div class="lines">
+<div><span class="m"># %% [1] Gather selected assets</span><span class="cell-tag" id="cellTag">#13 · ran 12:40 · 0.03 s</span></div>
+<div class="rantint"><span class="c">import</span> unreal</div>
+<div class="rantint">assets <span class="o">=</span> unreal.<span class="t">EditorUtilityLibrary</span>.<span class="f">get_selected_asset_data</span>()<span class="inlay">list[AssetData] · 12 items</span></div>
+<div class="rantint"><span class="f">print</span>(<span class="s">f"</span>{<span class="f">len</span>(assets)}<span class="s"> assets selected"</span>)</div>
+<div class="rantint">prefix <span class="o">=</span> <span class="s">"SM_"</span></div>
+<div></div>
+<div class="cell-sep"><span class="m"># %% [2] Rename</span><span class="cell-tag">#14 · ran 12:41 · 0.42 s · error</span></div>
+<div class="rantint" id="ranOk"><span id="ranOkText">renamed <span class="o">=</span> <span class="n">0</span></span></div>
+<div id="ranErr"><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Batch rename"</span>):</div>
+<div>    <span class="c">for</span> data <span class="c">in</span> assets:</div>
+<div>        name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</div>
+<div>        <span class="c">if</span> <span class="k">not</span> name.<span class="f">startswith</span>(prefix):</div>
+<div>            new_path <span class="o">=</span> <span class="s">f"</span>{data.package_path}<span class="s">/</span>{prefix}{name}<span class="s">"</span></div>
+<div>            <span class="c">assert</span> unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">rename_asset</span>(<span class="t">str</span>(data.package_name), new_path), new_path</div>
+<div>            unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">save_asset</span>(new_path)</div>
+<div></div>
+<div class="curline"><span class="cursor" id="cur1"></span><span class="f">print</span>(<span class="s">f"renamed </span>{<span class="sqw" id="squig">rename_count</span>}<span class="s">"</span>)<span class="hintchip" id="hintChip"><span class="keycap">Alt+Enter</span>runs this line and moves to the next</span></div>
+          </div>
+          <div class="minimap"><div class="vis"></div><i style="width:40%"></i><i style="width:20%"></i><i style="width:30%"></i><i style="width:55%"></i><i style="width:35%"></i><i></i><i style="width:45%"></i><i style="width:60%"></i><i style="width:30%"></i><i style="width:50%"></i><i style="width:70%"></i><i style="width:75%"></i><i style="width:65%"></i><i style="width:20%"></i></div>
+
+        </div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- right: variables, full height beside the output and code areas -->
+    <div class="panel right">
+      <div class="panel-head"><div class="tabs" id="rightTabs"><span class="on">Variables</span><span>Watch</span><span>Environment</span></div></div>
+      <div class="sec">Session namespace</div>
+      <div class="vars">
+        <div class="r sel" id="varAssets"><span>assets</span><span><span class="ty">list</span>[AssetData] (12)</span></div>
+        <div class="r"><span style="padding-left:12px">[0]</span><span>/Game/Props/Rock_01</span></div>
+        <div class="r"><span style="padding-left:12px">[1]</span><span>/Game/Props/Rock_02</span></div>
+        <div class="r"><span>data</span><span><span class="ty">AssetData</span> Rock_09</span></div>
+        <div class="r"><span>name</span><span><span class="ty">str</span> 'Rock_09'</span></div>
+        <div class="r"><span>new_path</span><span><span class="ty">str</span> '/Game/Props/SM_Rock_09'</span></div>
+        <div class="r"><span>prefix</span><span><span class="ty">str</span> 'SM_'</span></div>
+        <div class="r"><span>renamed</span><span><span class="ty">int</span> 0</span></div>
+        <div class="r"><span>unreal</span><span><span class="ty">module</span> unreal</span></div>
+        <div class="r"><span>_</span><span><span class="ty">int</span> 12</span></div>
+      </div>
+      <div class="sec" style="margin-top:10px" id="aliasHead">Selection aliases <i>· as of 12:41:30</i></div>
+      <div class="vars">
+        <div class="r"><span class="al">sel</span><span><span class="ty">list</span>[Actor] (0)</span></div>
+        <div class="r"><span class="al">sel_assets</span><span><span class="ty">list</span>[AssetData] (12)</span></div>
+        <div class="r"><span class="al">world</span><span><span class="ty">World</span> Lvl_Downtown</span></div>
+        <div class="r"><span class="al">subsys</span><span><span class="ty">function</span> subsys(cls)</span></div>
+      </div>
+      <div class="sec" style="margin-top:10px">Undo · top of the stack</div>
+      <div class="undorow" id="undoRow"><code>empty</code><br><span class="lo">cleared after Run #14 renamed assets</span></div>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="ok" id="statusPy">● Idle</span>
+    <span id="statusMode">Session</span>
+    <span>Python 3.11.8</span>
+    <span>Language server <span class="ok">✓</span></span>
+    <span>Ruff <span class="ok">✓</span></span>
+    <span>dream-check <span class="ok">✓</span></span>
+    <span><span class="err">✖ 1</span> <span class="warn">⚠ 1</span></span>
+    <div class="spacer"></div>
+    <span>Ln 17, Col 1</span><span>Spaces: 4</span><span>UTF-8 · LF</span><span>Journaled 2 s ago</span>
+  </div>
+  <div class="status uestatus">
+    <span>▤ Content Drawer</span><span>Output Log</span><span>Cmd ▾<span class="cmdbox">Enter Console Command</span></span>
+    <div class="spacer"></div>
+    <span class="dream-item" id="ws07"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Idle <span class="sep">·</span> last run ok 0.01 s</span>
+    <span>Derived Data</span><span>⑂ Source Control</span><span>✓ All Saved</span>
+  </div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#runBtn" data-at="l" data-dx="-12" data-dy="0"><div class="num">1</div></div>
+<div class="callout" data-for="#undoToggle" data-at="tr" data-dx="0" data-dy="-8"><div class="num">2</div></div>
+<div class="callout" data-for="#fileRow" data-at="tr" data-dx="-56" data-dy="-9"><div class="num">3</div></div>
+<div class="callout" data-for="#ranOkText" data-at="r" data-dx="22"><div class="num">4</div></div>
+<div class="callout" data-for="#chg15" data-at="r" data-dx="18"><div class="num">5</div></div>
+<div class="callout" data-for="#squig" data-at="b" data-dx="0" data-dy="16"><div class="num">6</div></div>
+<div class="callout" data-for="#run14" data-at="r" data-dx="-14" data-dy="0"><div class="num">7</div></div>
+<div class="callout" data-for="#promptHint" data-at="l" data-dx="-18"><div class="num">8</div></div>
+<div class="callout" data-for="#varAssets" data-at="r" data-dx="-14" data-dy="-22"><div class="num">9</div></div>
+<div class="callout" data-for="#aliasHead" data-at="r" data-dx="-14" data-dy="0"><div class="num">10</div></div>
+<div class="callout" data-for="#statusPy" data-at="t" data-dx="10" data-dy="-14"><div class="num">11</div></div>
+<div class="callout" data-for="#ws07" data-at="l" data-dx="-16"><div class="num">12</div></div>
+<div class="callout" data-for="#echoWith" data-at="r" data-dx="20"><div class="num">13</div></div>
+<div class="callout" data-for="#hintChip" data-at="r" data-dx="18"><div class="num">14</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Run split button.</b> <code>▶ Run · Session ▾</code> always shows the namespace mode. Ctrl+Enter runs the selection, or the buffer if nothing is selected; Ctrl+Shift+Enter the buffer; Ctrl+Alt+Shift+Enter the cell. The ▾ menu holds Run selection, Run buffer, Run file, Run line and advance, Run in / without transaction and the mode: Session or Isolated. Stop is Esc or Shift+F5 while a run is active.</span></div>
+  <div><span class="num">2</span><span><b>One undo step per run.</b> Each run is one editor transaction named <code>Dream: &lt;tab&gt; #N</code>. Undo Last Run (Ctrl+Alt+Z, only inside Dream) reverts its recorded edits; imports, asset renames and moves and PIE edits are never undoable, and the run block says so; file writes are never undoable either (RUN-07); a run that renames assets also clears the editor's undo history, as Run #14 did; Ctrl+Z in a buffer is always text undo. Run File defaults to no transaction.</span></div>
+  <div><span class="num">3</span><span><b>Explorer.</b> Project scripts, a read-only studio library, journaled untitled buffers and Recent. Problem counts appear on each file. Dream itself ships no <code>init_unreal.py</code>; the one listed belongs to the project.</span></div>
+  <div><span class="num">4</span><span><b>Cells and run marks.</b> Each <code># %%</code> header shows its last run's number, time and duration, here <code>#13 · ran 12:40 · 0.03 s</code> and <code>#14 · ran 12:41 · 0.42 s · error</code> (RUN-03). After a run, the gutter's run lane, between the line numbers and the change bars, marks each statement by how it ended (EDT-18): a solid green bar for ok, a dashed red bar for the statement that raised (lines 9–14), a dotted amber bar for one that was stopped, and a dash-dot blue bar for one that ended the run through <code>SystemExit</code> (bar patterns proposed); only ok lines are tinted. A run replaces only the marks on its own statements' lines, so the trail stays: lines 2–5 still carry Run #13's marks after Run #14 marked line 8, and each tooltip names its run and outcome (“Ran in #13 · ok”). Line 17 was not reached and stays unmarked; line 15 was typed after the run, and an edited line loses its mark.</span></div>
+  <div><span class="num">5</span><span><b>Change bars.</b> The outlined bars at the gutter's right edge mark lines added (green) or modified (blue) since the last save; line 15 was added after Run #14. The run marks are filled or patterned and have their own lane to the left, so a change bar never reads as a run mark. Merged completion, quick docs and hover are in mockup 03.</span></div>
+  <div><span class="num">6</span><span><b>Inline inspections.</b> Ruff, the language server and <code>dream-check</code> (SUM codes) show squiggles as you type, without running code.</span></div>
+  <div><span class="num">7</span><span><b>Structured output.</b> Every run, REPL lines included, gets a number, source, time and outcome (<code>ok</code>, <code>error</code>, <code>cancelled</code>, <code>not executed</code>, <code>lost</code>) and its undo name. An error keeps its transaction; the header offers Undo this run unless the run renamed assets. Traceback links open the line; F4 walks them. The uncaught exception also becomes a <code>runtime</code> error in Problems at line 14.</span></div>
+  <div><span class="num">8</span><span><b>REPL prompt.</b> Enter runs when the input is complete, Shift+Enter adds a line, Up walks history. It runs in the Session. The output area, on top by default, holds the Output, REPL and Problems tabs (F8 walks Problems) and the prompt strip under the tab body, so the prompt sits between the history and the code, as in Maya. View ▸ Output Position moves the area below the code.</span></div>
+  <div><span class="num">9</span><span><b>Variables.</b> The Session is the Unreal console's globals, shared with the Output Log Python console. Values expand lazily and are never read through property getters. The last result is bound to <code>_</code>.</span></div>
+  <div><span class="num">10</span><span><b>Selection aliases.</b> <code>sel</code>, <code>sel_assets</code>, <code>world</code> and <code>subsys(cls)</code> are refreshed while idle. Once your code rebinds one of these names, Dream leaves it alone for the rest of the session, and its row and hover then read “sel: your value since Run #N; no longer refreshed”.</span></div>
+  <div><span class="num">11</span><span><b>Status bar.</b> Run state (<code>Idle</code>, <code>Starting</code>, <code>Running</code>, <code>Stopping…</code>, <code>Task running</code>; <code>Paused</code> shows only in the Paused window, since the tab is not drawn while it is open), the namespace mode, interpreter, language-service health, cursor and journal age.</span></div>
+  <div><span class="num">12</span><span><b>Dream in the Unreal status bar.</b> Mark · state · detail · [Stop]. It stays visible when the Dream tab is hidden. After an error it reads <code>Dream · Run #N error</code> and a click opens the traceback; <code>Dream · Run #N cancelled</code> and <code>Dream · Run #N not executed</code> open the run block.</span></div>
+  <div><span class="num">13</span><span><b>Input echo.</b> Each statement is echoed with <code>›</code> and its line number just before it runs, so its output follows directly under it and the block reads as a history of what ran: in Run #13 the printed line sits between the echo of line 4 and the echo of line 5 (OUT-12). REPL runs echo with <code>&gt;&gt;&gt;</code> and <code>...</code>. Normal folds a statement's echo after 6 lines; Echo input in the toolbar hides echo lines. The Output Log gets the output, not the echo.</span></div>
+  <div><span class="num">14</span><span><b>Run line and advance.</b> Alt+Enter runs the line or statement under the caret, then moves the caret to the next statement, so repeated presses walk the buffer one statement at a time, each a numbered run (RUN-26). On a <code>for</code> or <code>with</code> header it runs the whole block; stepping through a body skips its <code>else</code> or <code>except</code> clause, so nothing runs twice. Until you first use the key, the hint chip shows at the end of the caret line when it starts a statement and you are not typing (proposed).</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+</body></html>

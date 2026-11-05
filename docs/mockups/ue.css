@@ -1,0 +1,269 @@
+/* Shared look for the mockups: approximates the UE5 editor dark theme.
+   Fonts are local Windows fonts so headless rendering never waits on the network. */
+:root {
+  --bg0: #0f0f0f;      /* window backdrop */
+  --bg1: #151515;      /* panel body */
+  --bg2: #1c1c1c;      /* editor body */
+  --bg3: #242424;      /* toolbars, headers */
+  --bg4: #2f2f2f;      /* hover, inactive tab */
+  --bg5: #383838;      /* active tab, inputs */
+  --line: #0a0a0a;
+  --edge: #3a3a3a;
+  --text: #c0c0c0;
+  --text-hi: #ffffff;
+  --text-lo: #808080;
+  --accent: #0070e0;   /* UE selection blue */
+  --accent-lo: #0a3a6b;
+  --ok: #4caf50;
+  --warn: #ffb300;
+  --err: #ff5252;
+  --info: #4fc3f7;
+  --callout: #ff9f1c;
+  /* syntax */
+  --kw: #569cd6; --ctl: #c586c0; --str: #ce9178; --num: #b5cea8; --com: #6a9955;
+  --fn: #dcdcaa; --cls: #4ec9b0; --deco: #d7ba7d; --param: #9cdcfe; --self: #569cd6;
+  --ui: "Segoe UI", "Roboto", sans-serif;
+  --mono: "Cascadia Mono", "Consolas", monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg0); color: var(--text); font: 12px/1.35 var(--ui); }
+.canvas { position: relative; padding: 24px; }
+.title-strip { font: 600 20px var(--ui); color: var(--text-hi); margin: 0 0 4px; }
+.subtitle-strip { color: var(--text-lo); font-size: 13px; margin: 0 0 16px; }
+
+/* window chrome */
+.win { background: var(--bg1); border: 1px solid var(--edge); border-radius: 4px; overflow: hidden;
+       box-shadow: 0 10px 40px rgba(0,0,0,.6); display: flex; flex-direction: column; }
+.win-title { height: 30px; background: var(--bg3); display: flex; align-items: center; padding: 0 10px; gap: 10px;
+             border-bottom: 1px solid var(--line); color: var(--text); }
+.win-title .menus span { margin-right: 14px; color: var(--text); }
+.ue-logo { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ddd; display: inline-block; }
+
+/* dock tabs */
+.docktabs { display: flex; background: var(--bg0); height: 28px; align-items: flex-end; padding-left: 4px; gap: 2px; }
+.docktab { background: var(--bg4); color: var(--text); padding: 6px 14px 6px 10px; border-radius: 4px 4px 0 0; font-size: 12px;
+           display: flex; align-items: center; gap: 6px; }
+.docktab.active { background: var(--bg3); color: var(--text-hi); box-shadow: inset 0 2px 0 var(--accent); }
+.docktab .x { color: var(--text-lo); margin-left: 6px; }
+
+/* toolbar */
+.toolbar { background: var(--bg3); height: 36px; display: flex; align-items: center; padding: 0 8px; gap: 4px; border-bottom: 1px solid var(--line); }
+.tb { height: 26px; padding: 0 9px; border-radius: 3px; display: flex; align-items: center; gap: 6px; color: var(--text); white-space: nowrap; }
+.tb:hover, .tb.hover { background: var(--bg5); }
+.tb.primary { background: var(--accent); color: #fff; }
+.tb.danger { background: #5a1d1d; color: #ffb4b4; }
+.tb .ico { font-family: "Segoe UI Symbol", var(--ui); font-size: 13px; }
+.tb-sep { width: 1px; height: 20px; background: var(--edge); margin: 0 6px; }
+.spacer { flex: 1; }
+.combo { background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; height: 24px; padding: 0 8px; display: flex; align-items: center; gap: 8px; }
+.search { background: var(--bg1); border: 1px solid var(--edge); border-radius: 12px; height: 24px; padding: 0 10px; color: var(--text-lo); display:flex; align-items:center; min-width: 180px; }
+
+/* layout helpers */
+.row { display: flex; }
+.col { display: flex; flex-direction: column; }
+.grow { flex: 1; min-width: 0; min-height: 0; }
+.splitter-v { width: 3px; background: var(--line); }
+.splitter-h { height: 3px; background: var(--line); }
+
+/* side panel */
+.panel { background: var(--bg1); display: flex; flex-direction: column; min-height: 0; }
+.panel-head { background: var(--bg3); height: 26px; display: flex; align-items: center; padding: 0 8px; gap: 8px; color: var(--text-hi);
+              font-weight: 600; font-size: 11px; letter-spacing: .3px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.panel-head .tabs span { margin-right: 12px; color: var(--text-lo); font-weight: 600; }
+.panel-head .tabs span.on { color: var(--text-hi); border-bottom: 2px solid var(--accent); padding-bottom: 3px; }
+.tree { padding: 4px 0; font-size: 12px; }
+.tree div { padding: 2px 8px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.tree div.sel { background: var(--accent-lo); color: var(--text-hi); }
+.tree .ind1 { padding-left: 22px; } .tree .ind2 { padding-left: 36px; } .tree .ind3 { padding-left: 50px; }
+.tree .dim { color: var(--text-lo); }
+.ico-folder::before { content: "\25B8"; color: var(--text-lo); margin-right: 2px; }
+.ico-open::before { content: "\25BE"; color: var(--text-lo); margin-right: 2px; }
+.badge { background: var(--bg5); color: var(--text); border-radius: 8px; padding: 0 6px; font-size: 10px; }
+.badge.err { background: #5a1d1d; color: #ffb4b4; } .badge.warn { background: #5a4a10; color: #ffe08a; }
+.badge.ok { background: #1d4a22; color: #b4f0b8; } .badge.blue { background: var(--accent-lo); color: #bfe0ff; }
+.pill { font-family: var(--mono); font-size: 10px; padding: 0 5px; border-radius: 3px; background: var(--bg5); color: var(--text-lo); }
+
+/* editor tabs */
+.etabs { display: flex; background: var(--bg1); height: 30px; align-items: stretch; border-bottom: 1px solid var(--line); }
+.etab { padding: 0 12px; display: flex; align-items: center; gap: 7px; color: var(--text-lo); border-right: 1px solid var(--line); font-size: 12px; }
+.etab.active { background: var(--bg2); color: var(--text-hi); box-shadow: inset 0 -2px 0 var(--accent); }
+.etab .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text); }
+.etab .lang { font: 700 9px var(--mono); color: #ffd54f; }
+.etab .x { color: var(--text-lo); }
+.breadcrumb { height: 22px; background: var(--bg2); color: var(--text-lo); padding: 0 12px; display: flex; align-items: center; gap: 6px; font-size: 11px; border-bottom: 1px solid #222; }
+
+/* code view */
+.code { background: var(--bg2); font: 13px/19px var(--mono); position: relative; overflow: hidden; display: flex; }
+.gutter { color: #5a5a5a; text-align: right; padding: 6px 0; user-select: none; min-width: 64px; position: relative; }
+.gutter div { height: 19px; padding-right: 10px; position: relative; }
+.gutter .cur { color: var(--text); }
+.gutter .bp::before { content: ""; position: absolute; left: 8px; top: 4px; width: 11px; height: 11px; border-radius: 50%; background: #e51400; }
+.gutter .bpc::before { content: ""; position: absolute; left: 8px; top: 4px; width: 11px; height: 11px; border-radius: 50%; background: #e51400; box-shadow: inset 0 0 0 3px #e51400, inset 0 0 0 5px #fff3; }
+.gutter .pc::after { content: "\27A4"; position: absolute; left: 22px; top: 0; color: #ffd54f; font-size: 12px; }
+.gutter .fold::after { content: "\2304"; position: absolute; right: -2px; top: -4px; color: #666; font-size: 12px; }
+.gutter .chg { box-shadow: inset -3px 0 0 #2e7d32; } .gutter .mod { box-shadow: inset -3px 0 0 #1565c0; }
+.lines { padding: 6px 0; flex: 1; color: #d4d4d4; position: relative; }
+.lines div { height: 19px; padding-left: 8px; white-space: pre; }
+.lines .curline { background: #262626; }
+.lines .sel { background: #264f78; }
+.lines .running { background: rgba(0,112,224,.16); box-shadow: inset 3px 0 0 var(--accent); }
+.lines .errline { background: rgba(255,82,82,.12); }
+.lines .pcline { background: rgba(255,213,79,.15); }
+.sq { text-decoration: underline wavy var(--err); text-underline-offset: 3px; }
+.sqw { text-decoration: underline wavy var(--warn); text-underline-offset: 3px; }
+.ghost { color: #6b6b6b; font-style: italic; }
+.inlay { color: #8a8a8a; background: #2a2a2a; border-radius: 3px; padding: 0 4px; font-size: 11px; margin-left: 10px; font-family: var(--ui); }
+.cell-sep { border-top: 1px dashed #3d5a80; }
+.cell-tag { color: #7aa7e0; font-family: var(--ui); font-size: 10px; background: #13233a; border-radius: 3px; padding: 0 5px; margin-left: 10px; }
+.cursor { display: inline-block; width: 2px; height: 16px; background: #fff; vertical-align: -3px; }
+.minimap { width: 70px; background: #181818; border-left: 1px solid #222; position: relative; }
+.minimap i { display: block; height: 2px; margin: 2px 8px; background: #3b3b3b; border-radius: 1px; }
+.minimap .vis { position: absolute; left: 0; right: 0; top: 4px; height: 120px; background: rgba(255,255,255,.05); }
+.k { color: var(--kw); } .c { color: var(--ctl); } .s { color: var(--str); } .n { color: var(--num); } .m { color: var(--com); font-style: italic; }
+.f { color: var(--fn); } .t { color: var(--cls); } .d { color: var(--deco); } .p { color: var(--param); } .o { color: #d4d4d4; }
+
+/* output / console */
+.out { background: #121212; font: 12px/18px var(--mono); padding: 4px 0; overflow: hidden; }
+.out div { padding: 0 10px; white-space: pre; }
+.out .echo { color: #7a7a7a; }
+.out .echo::before { content: ">>> "; color: #555; }
+.out .echo.cont::before { content: "... "; }
+.out .res { color: var(--text-hi); }
+.out .info { color: var(--text); }
+.out .warn { color: var(--warn); }
+.out .err { color: var(--err); }
+.out .ok { color: var(--ok); }
+.out .link { color: var(--info); text-decoration: underline; cursor: pointer; }
+.out .hdr { color: #6b8fb8; background: #161c24; border-top: 1px solid #1f2a38; font-family: var(--ui); font-size: 11px; display: flex; gap: 10px; }
+.out .hdr b { color: #a8c7ee; font-weight: 600; }
+.out .ts { color: #555; }
+.prompt { background: #181818; border-top: 1px solid var(--edge); font: 13px/19px var(--mono); display: flex; align-items: flex-start; padding: 5px 8px; gap: 8px; }
+.prompt .ps { color: var(--accent); font-weight: 700; }
+
+/* popups */
+.popup { position: absolute; background: #252526; border: 1px solid #454545; border-radius: 3px; box-shadow: 0 6px 24px rgba(0,0,0,.65); font: 12.5px/20px var(--mono); z-index: 10; }
+.popup .it { padding: 0 8px; display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.popup .it.on { background: #04395e; color: #fff; }
+.popup .kind { width: 16px; height: 16px; border-radius: 3px; font: 700 10px/16px var(--ui); text-align: center; color: #fff; }
+.kind.m { background: #b180d7; } .kind.c { background: #e8ab53; color: #222; } .kind.p { background: #75beff; color: #222; } .kind.v { background: #5aa9e6; color:#222 } .kind.mod { background: #888; } .kind.e { background: #d7ba7d; color: #222; }
+.popup .src { margin-left: auto; font: 10px var(--ui); color: var(--text-lo); padding-left: 16px; }
+.popup .src.live { color: #7ee787; }
+.doc { font: 12px/1.45 var(--ui); padding: 8px 10px; color: var(--text); }
+.doc code { font-family: var(--mono); color: var(--text-hi); }
+.doc .sig { font-family: var(--mono); color: var(--text-hi); border-bottom: 1px solid #3a3a3a; padding-bottom: 6px; margin-bottom: 6px; }
+.doc .sig b { color: var(--param); font-weight: 400; text-decoration: underline; }
+
+/* status bar */
+.status { height: 24px; background: var(--bg3); display: flex; align-items: center; gap: 14px; padding: 0 10px; font-size: 11px; color: var(--text); border-top: 1px solid var(--line); }
+.status .ok { color: var(--ok); } .status .warn { color: var(--warn); } .status .err { color: var(--err); }
+.status .busy { background: var(--accent); color: #fff; padding: 0 8px; height: 100%; display: flex; align-items: center; gap: 6px; }
+
+/* dialogs */
+.dialog { position: absolute; background: var(--bg3); border: 1px solid #4a4a4a; border-radius: 5px; box-shadow: 0 16px 60px rgba(0,0,0,.75); z-index: 20; }
+.dialog .dh { padding: 10px 14px; font-weight: 600; color: var(--text-hi); border-bottom: 1px solid var(--line); font-size: 13px; }
+.dialog .db { padding: 12px 14px; }
+.dialog .df { padding: 10px 14px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--line); }
+.btn { padding: 5px 14px; border-radius: 3px; background: var(--bg5); color: var(--text-hi); }
+.btn.primary { background: var(--accent); }
+.btn.danger { background: #8b2020; }
+.chk { display: inline-block; width: 13px; height: 13px; border: 1px solid #777; border-radius: 2px; vertical-align: -2px; margin-right: 6px; background: var(--bg1); }
+.chk.on { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--bg1); }
+.progress { height: 6px; background: var(--bg1); border-radius: 3px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); }
+.dim-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 15; }
+
+/* annotations (explain the UX; not part of the product UI) */
+.callout { position: absolute; z-index: 30; display: flex; align-items: flex-start; gap: 8px; max-width: 280px; }
+.callout .num { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--callout); color: #111; font: 700 13px/24px var(--ui); text-align: center; box-shadow: 0 0 0 3px rgba(0,0,0,.6); }
+.callout .txt { background: rgba(20,20,20,.94); border: 1px solid var(--callout); color: #f3f3f3; border-radius: 4px; padding: 6px 9px; font: 12px/1.4 var(--ui); box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+.callout .txt b { color: var(--callout); }
+.ring { position: absolute; z-index: 29; border: 2px dashed var(--callout); border-radius: 6px; pointer-events: none; }
+.legend { margin-top: 14px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 28px; font-size: 12.5px; color: var(--text); }
+.legend div { display: flex; gap: 8px; align-items: flex-start; }
+.legend .num { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--callout); color: #111; font: 700 11px/20px var(--ui); text-align: center; }
+.legend b { color: var(--text-hi); }
+
+/* ---- v2 additions (Dream naming and final rulings). New class names only; nothing above changes. ---- */
+/* Dream mark: an ink dot with an S, used on the dock tab, menus and the WS-07 status-bar item (U1, U14) */
+.dream-mark { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 15px; height: 15px; border-radius: 50%;
+             background: radial-gradient(circle at 36% 32%, #fbf8ef 0 30%, #ddd5c1 100%); box-shadow: 0 0 0 1px #8c8473;
+             color: #0d0d0d; font: 700 11px/1 Georgia, "Times New Roman", serif; }
+.dream-mark::before { content: "S"; margin-top: 1px; }
+.dream-mark.sm { width: 13px; height: 13px; font-size: 9.5px; }
+/* WS-07 item in the Unreal status bar: mark · state · detail · [Stop] */
+.dream-item { height: 100%; display: flex; align-items: center; gap: 6px; padding: 0 9px; color: var(--text); white-space: nowrap; }
+.dream-item .sep { color: var(--text-lo); }
+.dream-item.running { background: #0d3a66; color: #fff; box-shadow: inset 0 0 0 1px #2f78c8; }
+.dream-item.task { background: #123a2a; color: #dff5e6; box-shadow: inset 0 0 0 1px #2e7d52; }
+.dream-item.stopping { background: #4a1c1c; color: #ffd6d6; box-shadow: inset 0 0 0 1px #a33a3a; }
+.dream-item.error { color: #ffb4b4; }
+.dream-item .stopchip { background: rgba(0,0,0,.38); border: 1px solid rgba(255,255,255,.25); border-radius: 2px; padding: 0 6px; font-weight: 600; line-height: 16px; }
+/* split Run button: ▶ Run · Session ▾ (U6) */
+.tb.splitrun { padding: 0; gap: 0; }
+.tb.splitrun .sr-main { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 8px 0 9px; }
+.tb.splitrun .sr-mode { font-weight: 600; }
+.tb.splitrun .sr-caret { display: flex; align-items: center; height: 100%; padding: 0 7px; border-left: 1px solid rgba(255,255,255,.3); }
+/* keyboard keycap */
+.keycap { font: 10.5px/15px var(--mono); padding: 0 5px; border: 1px solid #5a5a5a; border-bottom-width: 2px; border-radius: 3px; color: #e6e6e6; background: #2a2a2a; display: inline-block; white-space: nowrap; }
+/* modal window (Run window, Paused window, U26). The editor behind keeps its last painted frame,
+   undimmed (RV-17), so there is no backdrop style. */
+.modalwin { position: absolute; z-index: 22; display: flex; flex-direction: column; overflow: hidden; background: var(--bg2);
+            border: 1px solid #5c5c5c; border-radius: 4px; box-shadow: 0 18px 70px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.7); }
+.modalwin .mw-title { height: 30px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--bg3);
+                      color: var(--text-hi); font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.modalwin .mw-title .mw-x { margin-left: auto; color: var(--text-lo); font-weight: 400; }
+.modalwin .mw-body { padding: 12px 14px; }
+.modalwin .mw-foot { flex: none; display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--bg3); border-top: 1px solid var(--line); }
+.modaltag { font: 600 10px var(--ui); letter-spacing: .4px; text-transform: uppercase; color: #ffd27a; background: #3a2c0c; border: 1px solid #6b5216; border-radius: 3px; padding: 0 5px; }
+/* labelled meter (progress, undo record size) */
+.meter { height: 8px; background: #0b0b0b; border: 1px solid #333; border-radius: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, #0a5fc0, #2f8cff); }
+.meter.ok i { background: var(--ok); } .meter.warn i { background: var(--warn); } .meter.grey i { background: #6b6b6b; }
+/* completion source badges (U4) */
+.srcb { margin-left: auto; font: 600 9.5px/14px var(--ui); padding: 0 5px; border-radius: 3px; letter-spacing: .2px; }
+.srcb.runtime { background: #173d22; color: #8fe3a0; } .srcb.static { background: #14304f; color: #9ccbff; }
+.srcb.keyword { background: #3a2f4a; color: #d7b8f3; } .srcb.snippet { background: #4a3a12; color: #ffd98a; }
+/* inline Dream banner on a buffer (trust, recovery, reload) */
+.sbanner { display: flex; align-items: center; gap: 10px; padding: 6px 12px; font-size: 12px; color: var(--text); background: #1f2833;
+           border-bottom: 1px solid #2c3a4a; box-shadow: inset 3px 0 0 var(--info); }
+.sbanner.warn { background: #2e2608; border-bottom-color: #5a4a10; box-shadow: inset 3px 0 0 var(--warn); }
+.sbanner .btn { padding: 2px 10px; font-size: 11.5px; }
+
+/* ---- v1.2 additions (PO-01 to PO-03: output area on top, input echo, ran-line markers). New rules only. ---- */
+/* the output area above the code area (PO-01, WS-02, WS-03): output panel, then .splitter-h, then the code area */
+.outarea { flex: none; }
+.codearea { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+/* input echo (OUT-12): token Dream.Output.Echo, buffer line number in a gutter, a leading › glyph (A11Y-05).
+   REPL and console echo keep the >>> and ... prompts of .echo in place of line numbers. */
+.out .echo, .out .ec { color: #8d9ab0; }
+.out .echo::before { color: #5d6a80; }
+.out .ec .eln { display: inline-block; min-width: 24px; text-align: right; color: #566173; }
+.out .ec .egl { color: #6f88ad; padding: 0 7px 0 6px; }
+.foldchip { display: inline-block; font: 11px/15px var(--ui); color: #b8c7de; background: #1c2532; border: 1px solid #33465f;
+            border-radius: 3px; padding: 0 6px; vertical-align: 1px; white-space: nowrap; }
+/* ran-line marks (EDT-18) in the gutter's run lane, between the line numbers and the change bars (TDD §4.8.2):
+   ok is a solid bar, raised a dashed bar, stopped a dotted bar, exited a dash-dot bar; only ok lines get a light tint.
+   A gutter that shows the run lane has class .runlane: 4 px from the digits to the lane, the lane at 8-11 px from the
+   right edge, then 4 px to the change bar at 0-4 px. */
+.gutter.runlane div { padding-right: 15px; }
+.gutter .rk-ok   { background: linear-gradient(var(--ok), var(--ok)) right 8px top 0 / 3px 100% no-repeat; }
+.gutter .rk-err  { background: repeating-linear-gradient(to bottom, var(--err) 0 5px, transparent 5px 8px) right 8px top 0 / 3px 100% no-repeat; }
+.gutter .rk-stop { background: repeating-linear-gradient(to bottom, var(--warn) 0 2px, transparent 2px 5px) right 8px top 0 / 3px 100% no-repeat; }
+.gutter .rk-exit { background: repeating-linear-gradient(to bottom, var(--info) 0 6px, transparent 6px 8px, var(--info) 8px 10px, transparent 10px 12px) right 8px top 0 / 3px 100% no-repeat; }
+/* change bars (TDD §4.8.2 lane table): outlined, two 1 px rails, so they never look like a filled ran mark */
+.gutter .chg { box-shadow: inset -1px 0 0 #43a047, inset -3px 0 0 var(--bg2), inset -4px 0 0 #43a047; }
+.gutter .mod { box-shadow: inset -1px 0 0 #3d8bfd, inset -3px 0 0 var(--bg2), inset -4px 0 0 #3d8bfd; }
+/* the docked execution arrow (TDD §5.5.4) in the run lane, right of the line numbers */
+.gutter.runlane .runarrow::after { content: "\25B6"; position: absolute; right: 5px; top: 0; color: #5aa7ff; font-size: 9px; }
+/* an unfocused caret is hollow (TDD §4.8.2 layer 4) */
+.cursor.hollow { width: 7px; background: transparent; box-shadow: inset 0 0 0 1px #bdbdbd; }
+/* a transaction note directly under a run header (TDD §6.4): one muted line */
+.out .txnote { color: var(--text-lo); font-style: italic; }
+.lines .rantint { background: rgba(76,175,80,.13); }
+/* RUN-26 hint chip beside the caret line */
+.hintchip { display: inline-flex; align-items: center; gap: 6px; margin-left: 30px; font: 11px/17px var(--ui); color: #cfe2fb;
+            background: #13263d; border: 1px solid #2d5182; border-radius: 3px; padding: 0 8px 0 4px; vertical-align: 1px; white-space: nowrap; }
+.hintchip .keycap { font-size: 10px; line-height: 13px; }
+/* an output view in follow mode: pinned to its newest line, older lines scroll off the top */
+.out.follow { display: flex; flex-direction: column; justify-content: flex-end; }
+.out.follow > * { flex: none; }

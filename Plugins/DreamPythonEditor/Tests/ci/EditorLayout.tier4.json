@@ -1,0 +1,261 @@
+{
+	"DreamTier4TestLayout": {
+		"Type": "Layout",
+		"Name": "DreamTier4TestLayout",
+		"PrimaryAreaIndex": -1,
+		"Areas": []
+	},
+	"UnrealEd_Layout_v1.6": {
+		"Type": "Layout",
+		"Name": "UnrealEd_Layout_v1.6",
+		"PrimaryAreaIndex": 0,
+		"Areas": [
+			{
+				"SizeCoefficient": 1,
+				"Type": "Area",
+				"Orientation": "Orient_Horizontal",
+				"WindowPlacement": "Placement_ParentSpecified",
+				"WindowPosition_X": 1001,
+				"WindowPosition_Y": 305,
+				"WindowSize_X": 1316,
+				"WindowSize_Y": 756,
+				"bIsMaximized": true,
+				"Nodes": [
+					{
+						"SizeCoefficient": 2,
+						"Type": "Stack",
+						"HideTabWell": false,
+						"ForegroundTab": "LevelEditor",
+						"Tabs": [
+							{
+								"TabId": "HomeScreen",
+								"TabState": "OpenedTab"
+							},
+							{
+								"TabId": "LevelEditor",
+								"TabState": "OpenedTab"
+							},
+							{
+								"TabId": "DockedToolkit",
+								"TabState": "ClosedTab"
+							}
+						]
+					}
+				]
+			},
+			{
+				"SizeCoefficient": 1,
+				"Type": "Area",
+				"Orientation": "Orient_Vertical",
+				"WindowPlacement": "Placement_Automatic",
+				"WindowSize_X": 2236,
+				"WindowSize_Y": 904.7999877929688,
+				"Nodes": [
+					{
+						"SizeCoefficient": 1,
+						"Type": "Stack",
+						"HideTabWell": false,
+						"ForegroundTab": "None",
+						"Tabs": [
+							{
+								"TabId": "StandaloneToolkit",
+								"TabState": "ClosedTab"
+							}
+						]
+					}
+				]
+			}
+		]
+	},
+	"LevelEditor_Layout_v1.8": {
+		"Type": "Layout",
+		"Name": "LevelEditor_Layout_v1.8",
+		"PrimaryAreaIndex": 0,
+		"Areas": [
+			{
+				"SizeCoefficient": 1,
+				"Type": "Area",
+				"Orientation": "Orient_Horizontal",
+				"WindowPlacement": "Placement_NoWindow",
+				"Nodes": [
+					{
+						"SizeCoefficient": 0.8338562250137329,
+						"Type": "Splitter",
+						"Orientation": "Orient_Vertical",
+						"Nodes": [
+							{
+								"SizeCoefficient": 0.75,
+								"Type": "Splitter",
+								"Orientation": "Orient_Horizontal",
+								"Nodes": [
+									{
+										"SizeCoefficient": 0.15000000596046448,
+										"Type": "Stack",
+										"HideTabWell": true,
+										"ForegroundTab": "None",
+										"Tabs": [
+											{
+												"TabId": "VerticalModeToolbar",
+												"TabState": "ClosedTab"
+											}
+										]
+									},
+									{
+										"SizeCoefficient": 0.30000001192092896,
+										"Type": "Splitter",
+										"Orientation": "Orient_Vertical",
+										"Nodes": [
+											{
+												"SizeCoefficient": 0.5,
+												"Type": "Stack",
+												"HideTabWell": false,
+												"ForegroundTab": "None",
+												"Tabs": [
+													{
+														"TabId": "TopLeftModeTab",
+														"TabState": "ClosedTab"
+													},
+													{
+														"TabId": "PlacementBrowser",
+														"TabState": "ClosedTab"
+													}
+												]
+											},
+											{
+												"SizeCoefficient": 0.5,
+												"Type": "Stack",
+												"HideTabWell": false,
+												"ForegroundTab": "None",
+												"Tabs": [
+													{
+														"TabId": "BottomLeftModeTab",
+														"TabState": "ClosedTab"
+													}
+												]
+											}
+										]
+									},
+									{
+										"SizeCoefficient": 1,
+										"Type": "Stack",
+										"HideTabWell": true,
+										"ForegroundTab": "LevelEditorViewport",
+										"Tabs": [
+											{
+												"TabId": "LevelEditorViewport",
+												"TabState": "OpenedTab"
+											}
+										]
+									}
+								]
+							},
+							{
+								"SizeCoefficient": 0.4000000059604645,
+								"Type": "Stack",
+								"HideTabWell": false,
+								"ForegroundTab": "ContentBrowserTab1",
+								"Tabs": [
+									{
+										"TabId": "ColorGradingPanel",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "EmbeddedSequenceID",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "ContentBrowserTab1",
+										"TabState": "OpenedTab"
+									},
+									{
+										"TabId": "Sequencer",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "RewindDebugger2",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "OutputLog",
+										"TabState": "ClosedTab"
+									}
+								]
+							}
+						]
+					},
+					{
+						"SizeCoefficient": 0.30000001192092896,
+						"Type": "Stack",
+						"HideTabWell": false,
+						"ForegroundTab": "None",
+						"Tabs": [
+							{
+								"TabId": "TakeRecorder",
+								"TabState": "ClosedTab"
+							}
+						]
+					},
+					{
+						"SizeCoefficient": 0.41614392399787903,
+						"Type": "Splitter",
+						"Orientation": "Orient_Vertical",
+						"Nodes": [
+							{
+								"SizeCoefficient": 0.4000000059604645,
+								"Type": "Stack",
+								"HideTabWell": false,
+								"ForegroundTab": "LevelEditorSceneOutliner",
+								"Tabs": [
+									{
+										"TabId": "TopRightModeTab",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "LevelEditorSceneOutliner",
+										"TabState": "OpenedTab"
+									},
+									{
+										"TabId": "LevelEditorLayerBrowser",
+										"TabState": "ClosedTab"
+									}
+								]
+							},
+							{
+								"SizeCoefficient": 1,
+								"Type": "Stack",
+								"HideTabWell": false,
+								"ForegroundTab": "DreamEditor.Main",
+								"Tabs": [
+									{
+										"TabId": "BottomRightModeTab",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "LevelEditorSelectionDetails",
+										"TabState": "OpenedTab"
+									},
+									{
+										"TabId": "RewindDebuggerDetails2",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "WorldBrowserPartitionEditor",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "WorldSettingsTab",
+										"TabState": "ClosedTab"
+									},
+									{
+										"TabId": "DreamEditor.Main",
+										"TabState": "OpenedTab"
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+}

@@ -1,0 +1,4 @@
+{
+  "comment": "T-GAP-001 known violations, each reported on the slice-B board for its owner. A listed violation passes until it is fixed; an entry whose violation is gone fails the scan as stale, so remove it with the fix.",
+  "known": []
+}

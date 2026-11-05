@@ -1,0 +1,316 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x1244">
+<title>Debugger paused</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .win { height: 850px; position: relative; }
+  .vpdock { width: 300px; background: var(--bg1); }
+  .vp { position: relative; overflow: hidden; height: 380px;
+        background: linear-gradient(#3d556e 0%, #8fa3b5 52%, #57524a 52%, #34312b 100%); }
+  .vpbar { position: absolute; left: 0; right: 0; top: 0; height: 24px; background: rgba(20,20,20,.8); color: var(--text);
+           font-size: 11px; display: flex; align-items: center; padding: 0 6px; gap: 6px; }
+  .bld { position: absolute; background: #454c55; border-top: 1px solid #66707b; }
+  .bld i { position: absolute; width: 4px; height: 5px; background: #c8a75e; }
+  .uestatus { height: 26px; }
+  .cmdbox { background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; padding: 0 8px; color: var(--text-lo); margin-left: 4px; }
+  .etab .rundot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #3d6ea8; border-top-color: #9ccbff; }
+  .spin { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #7fb2ef; border-top-color: #fff; }
+  .status .busy { margin-left: -10px; }
+
+  /* gutter markers */
+  .gutter .bpd::before { content: ""; position: absolute; left: 8px; top: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid #b0352a; }
+  .gutter .lp::before { content: ""; position: absolute; left: 9px; top: 5px; width: 8px; height: 8px; background: #e51400; transform: rotate(45deg); }
+  .lines .pcline { box-shadow: inset 3px 0 0 #ffd54f; }
+  .code.sm { font: 12px/18px var(--mono); }
+  .code.sm .gutter { min-width: 60px; }
+  .code.sm .gutter div, .code.sm .lines div { height: 18px; }
+  .code.sm .gutter .bp::before, .code.sm .gutter .bpc::before { top: 3px; width: 10px; height: 10px; }
+  .tb.dis { color: #5f5f5f; }
+  .out .pz { color: #ffd54f; }
+  .out .skip { color: var(--info); }
+
+  /* the Paused window */
+  .pausewin { width: 1190px; height: 740px; }
+  .pausewin .mw-title { background: #3a2f05; color: #fff3c4; border-bottom-color: #6b5600; }
+  .pausewin .mw-title .pico { color: #ffd54f; font: 14px "Segoe UI Symbol", var(--ui); }
+  .pausewin .mw-title .mw-x { color: #c9b26a; font-weight: 400; font-size: 11.5px; }
+  .ptool { height: 38px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 8px; background: var(--bg3); border-bottom: 1px solid var(--line); }
+  .ptool .tb .pill { margin-left: 2px; }
+  .ptool .cond { margin-left: auto; color: var(--text-lo); font-size: 11.5px; white-space: nowrap; }
+  .ptool .cond code { font-family: var(--mono); color: var(--text-hi); }
+  .pbody { flex: 1; min-height: 0; display: grid; grid-template-columns: 610px 3px 1fr; }
+  .pcol { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .vsplit { background: var(--line); }
+  .hn { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-lo); font-size: 11px; }
+  .hn.l { margin-left: 4px; }
+  .ro { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; color: #ffd54f; background: #2e2606; border: 1px solid #5a4a10; border-radius: 3px; padding: 0 6px; font-size: 10.5px; }
+  .pfoot { height: 28px; flex: none; display: flex; align-items: center; gap: 14px; padding: 0 12px; background: var(--bg3); border-top: 1px solid var(--line); font-size: 11.5px; color: var(--text); white-space: nowrap; }
+  .pfoot .lo { color: var(--text-lo); }
+  .pfoot .nt { color: #9fd8f5; }
+
+  .stack { padding: 3px 0; font-size: 12px; }
+  .fr { display: flex; align-items: center; gap: 6px; height: 21px; padding: 0 8px; white-space: nowrap; }
+  .fr .arr { width: 12px; color: #ffd54f; font-size: 11px; }
+  .fr .fn { font-family: var(--mono); color: var(--fn); }
+  .fr .loc { margin-left: auto; color: var(--text-lo); font-size: 11px; font-family: var(--mono); }
+  .fr.on { background: var(--accent-lo); }
+  .fr.on .loc { color: #bfe0ff; }
+  .fr.hid { color: var(--text-lo); font-size: 11px; padding-left: 26px; }
+  .vars { font: 12px/20px var(--mono); }
+  .vars .r { display: grid; grid-template-columns: 210px minmax(0,1fr); padding: 0 8px; border-bottom: 1px solid #1d1d1d; white-space: nowrap; }
+  .vars .r > span { overflow: hidden; text-overflow: ellipsis; }
+  .vars .r > span:first-child { color: var(--param); }
+  .vars .r .ty { color: var(--cls); }
+  .vars .r.sel { background: var(--accent-lo); }
+  .vars .l2 { padding-left: 14px; } .vars .l3 { padding-left: 28px; }
+  .vars .r > span.grp { color: var(--text-lo); font-family: var(--ui); font-size: 11.5px; }
+  .vars .tw { color: var(--text-lo); }
+  .vars .al { color: #d7ba7d !important; }
+  .vars.watch .r { grid-template-columns: 210px minmax(0,1fr) 22px; }
+  .vars .dimv { color: var(--text-lo); font-family: var(--ui); font-size: 11.5px; }
+  .vars .rf { color: var(--info); font: 14px/20px "Segoe UI Symbol", var(--ui); text-align: center; }
+  .sec { padding: 4px 8px 2px; color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; display: flex; gap: 6px; align-items: center; }
+  .sec i { font-style: normal; text-transform: none; letter-spacing: 0; }
+  .tagsafe { font: 10px var(--ui); text-transform: none; letter-spacing: 0; color: #b4f0b8; background: #1d4a22; border-radius: 3px; padding: 0 5px; }
+  .tagman { font: 10px var(--ui); text-transform: none; letter-spacing: 0; color: #ffe08a; background: #4a3a10; border-radius: 3px; padding: 0 5px; }
+  .evnote { margin: 0; padding: 4px 10px; font-size: 11.5px; color: #ffe08a; background: #2e2608; border-bottom: 1px solid #4a3d10; white-space: nowrap; }
+  .evnote b { color: #fff3c4; }
+  .prompt.small { padding: 4px 8px; font-size: 12.5px; }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — paused at a breakpoint: the Paused window</div>
+<div class="subtitle-strip">A debug run (F5) of batch_rename.py, Run #14, stopped at line 27 when <code>i == 8</code>. The whole 1.0 debugger lives in one modal window; the editor behind it keeps the frame it painted before the run and takes no input until you continue or stop.</div>
+
+<div class="win" id="mainWin">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="row grow">
+    <!-- level viewport and outliner -->
+    <div class="col vpdock">
+      <div class="docktabs"><div class="docktab active">Lvl_Downtown</div></div>
+      <div class="vp" id="vp">
+        <div class="bld" style="left:16px;  bottom:38%; width:50px; height:150px"><i style="left:8px;top:20px"></i><i style="left:30px;top:44px"></i><i style="left:8px;top:80px"></i></div>
+        <div class="bld" style="left:82px; bottom:44%; width:60px; height:200px"><i style="left:10px;top:30px"></i><i style="left:36px;top:60px"></i><i style="left:10px;top:120px"></i></div>
+        <div class="bld" style="left:160px; bottom:40%; width:54px; height:120px"><i style="left:10px;top:22px"></i><i style="left:30px;top:64px"></i></div>
+        <div class="bld" style="left:230px; bottom:42%; width:60px; height:170px"><i style="left:12px;top:30px"></i><i style="left:34px;top:90px"></i></div>
+        <div class="vpbar">☰ Perspective · Lit</div>
+      </div>
+      <div class="panel grow">
+        <div class="panel-head">Outliner</div>
+        <div class="tree">
+          <div class="ico-open">Lvl_Downtown <span class="dim">(Editor)</span></div>
+          <div class="ind1">Crate_Large</div><div class="ind1">Crate_Small</div><div class="ind1">Barrel_A</div><div class="ind1">Pallet_02</div>
+        </div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- the Dream tab, as last painted before the run started (nothing outside the modal is drawn while paused) -->
+    <div class="col grow">
+      <div class="docktabs">
+        <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+        <div class="docktab">Content Browser<span class="x">×</span></div>
+      </div>
+      <div class="toolbar">
+        <div class="tb primary splitrun"><span class="sr-main"><span class="spin"></span>Starting…</span><span class="sr-caret">▾</span></div>
+        <div class="tb dis"><span class="ico">⏵</span>Run Cell</div>
+        <div class="tb dis"><span class="ico">⏹</span>Stop <span class="pill">Shift+F5</span></div>
+        <div class="tb-sep"></div>
+        <div class="tb dis"><span class="ico">🐞</span>Debug</div>
+        <div class="spacer"></div><div class="tb">⚙</div>
+      </div>
+      <div class="panel outarea" style="height:262px">
+        <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div></div>
+        <div class="out grow follow">
+          <div class="hdr"><b>▶ Run #13</b> batch_rename.py · cell [1] <span class="ts">12:42:51 · 0.03 s · ok</span></div>
+          <div class="ec"><span class="eln">2</span><span class="egl">›</span>import unreal</div>
+          <div class="ec"><span class="eln">3</span><span class="egl">›</span>from studio_tools import naming</div>
+          <div class="ec"><span class="eln">5</span><span class="egl">›</span>assets = unreal.EditorUtilityLibrary.get_selected_asset_data()</div>
+          <div class="ec"><span class="eln">6</span><span class="egl">›</span>print(f"{len(assets)} assets selected")</div>
+          <div class="info">12 assets selected</div>
+          <div class="hdr"><b>🐞 Run #14</b> batch_rename.py · debug · cell [2] <span class="ts">12:43:10 · starting · undo “Dream: batch_rename.py #14”</span></div>
+        </div>
+        <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="codearea">
+        <div class="etabs">
+          <div class="etab active"><span class="lang">PY</span>batch_rename.py<span class="rundot"></span></div>
+          <div class="etab"><span class="lang">PY</span>naming.py<span class="x">×</span></div>
+        </div>
+        <div class="code grow">
+          <div class="gutter"><div>18</div><div>19</div><div>20</div><div>21</div><div>22</div><div>23</div><div>24</div><div>25</div><div>26</div><div class="bpc cur">27</div><div>28</div><div>29</div><div>30</div><div>31</div><div>32</div><div>33</div><div>34</div><div>35</div><div>36</div></div>
+          <div class="lines">
+<div class="cell-sep"><span class="m"># %% [2] Rename to studio convention</span></div>
+<div><span class="k">def</span> <span class="f">fix_name</span>(<span class="p">i</span>, <span class="p">data</span>):</div>
+<div>    <span class="s">"""Called by naming.batch_apply() once per asset."""</span></div>
+<div>    asset <span class="o">=</span> data.<span class="f">get_asset</span>()</div>
+<div>    name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</div>
+<div>    prefix <span class="o">=</span> naming.<span class="f">prefix_for</span>(asset)</div>
+<div>    new_name <span class="o">=</span> naming.<span class="f">conform</span>(name, prefix)</div>
+<div>    <span class="c">if</span> new_name <span class="o">==</span> name:</div>
+<div>        <span class="c">return</span> <span class="k">False</span></div>
+<div class="curline">    old_path <span class="o">=</span> <span class="t">str</span>(data.package_name)</div>
+<div>    new_path <span class="o">=</span> <span class="s">f"</span>{data.package_path}<span class="s">/</span>{new_name}<span class="s">"</span></div>
+<div>    <span class="c">return</span> unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">rename_asset</span>(old_path, new_path)</div>
+<div></div>
+<div></div>
+<div><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Rename to convention"</span>):</div>
+<div>    results <span class="o">=</span> naming.<span class="f">batch_apply</span>(assets, fix_name)</div>
+<div><span class="f">print</span>(<span class="s">f"renamed </span>{<span class="f">sum</span>(results)}<span class="s"> of </span>{<span class="f">len</span>(assets)}<span class="s">"</span>)</div>
+<div></div>
+<div></div>
+          </div>
+        </div>
+      </div>
+      <div class="status">
+        <span class="busy">⟳ Starting · Run #14</span>
+        <span>Session</span><span>Debug run</span>
+        <div class="spacer"></div><span>Ln 27, Col 5</span><span>UTF-8 · LF</span>
+      </div>
+    </div>
+  </div>
+  <div class="status uestatus">
+    <span>▤ Content Drawer</span><span>Output Log</span><span>Cmd ▾<span class="cmdbox">Enter Console Command</span></span>
+    <div class="spacer"></div>
+    <span class="dream-item" id="ws07"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Starting <span class="sep">·</span> Run #14</span>
+    <span>⑂ Source Control</span>
+  </div>
+
+</div>
+
+<!-- the Paused window: modal -->
+<div class="modalwin pausewin" id="pauseWin" data-anchor="#mainWin" data-at="tl" data-dx="338" data-dy="40">
+  <div class="mw-title" id="pwTitle"><span class="pico">⏸</span>Paused — batch_rename.py:27 (breakpoint)<span class="mw-x">Run #14 · debug run · paused 00:42</span></div>
+  <div class="ptool" id="pwTool">
+    <div class="tb primary"><span class="ico">▶</span>Continue <span class="pill" style="background:#0058b0;color:#cfe6ff">F5</span></div>
+    <div class="tb"><span class="ico">↷</span>Step over <span class="pill">F10</span></div>
+    <div class="tb"><span class="ico">↓</span>Step into <span class="pill">F11</span></div>
+    <div class="tb"><span class="ico">↑</span>Step out <span class="pill">Shift+F11</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb danger" id="pwStop"><span class="ico">■</span>Stop <span class="pill" style="background:#7a1010;color:#ffd0d0">Shift+F5</span></div>
+    <span class="cond">Breakpoint condition <code>i == 8</code> · checked 9× · hit 1×</span>
+  </div>
+  <div class="pbody">
+    <!-- left: read-only source and the evaluate console -->
+    <div class="pcol">
+      <div class="panel-head" id="srcHead">batch_rename.py <span class="hn l">cell [2] · fix_name()</span><span class="ro">🔒 read-only</span></div>
+      <div class="code sm" style="height:360px; flex:none" id="srcView">
+        <div class="gutter"><div>18</div><div>19</div><div>20</div><div>21</div><div class="bpd">22</div><div>23</div><div>24</div><div>25</div><div>26</div><div class="bpc pc cur" id="pcGutter">27</div><div class="lp">28</div><div>29</div><div>30</div><div>31</div><div>32</div><div>33</div><div class="bp">34</div><div>35</div><div>36</div></div>
+        <div class="lines">
+<div class="cell-sep"><span class="m"># %% [2] Rename to studio convention</span></div>
+<div><span class="k">def</span> <span class="f">fix_name</span>(<span class="p">i</span>, <span class="p">data</span>):</div>
+<div>    <span class="s">"""Called by naming.batch_apply() once per asset."""</span></div>
+<div>    asset <span class="o">=</span> data.<span class="f">get_asset</span>()</div>
+<div>    name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</div>
+<div>    prefix <span class="o">=</span> naming.<span class="f">prefix_for</span>(asset)</div>
+<div>    new_name <span class="o">=</span> naming.<span class="f">conform</span>(name, prefix)</div>
+<div>    <span class="c">if</span> new_name <span class="o">==</span> name:</div>
+<div>        <span class="c">return</span> <span class="k">False</span></div>
+<div class="pcline" id="pcLine">    old_path <span class="o">=</span> <span class="t">str</span>(data.package_name)</div>
+<div>    new_path <span class="o">=</span> <span class="s">f"</span>{data.package_path}<span class="s">/</span>{new_name}<span class="s">"</span></div>
+<div>    <span class="c">return</span> unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">rename_asset</span>(old_path, new_path)</div>
+<div></div>
+<div></div>
+<div><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Rename to convention"</span>):</div>
+<div>    results <span class="o">=</span> naming.<span class="f">batch_apply</span>(assets, fix_name)</div>
+<div><span class="f">print</span>(<span class="s">f"renamed </span>{<span class="f">sum</span>(results)}<span class="s"> of </span>{<span class="f">len</span>(assets)}<span class="s">"</span>)</div>
+<div></div>
+<div></div>
+        </div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="panel grow">
+        <div class="panel-head" id="evalHead">Evaluate <span class="hn l">in frame fix_name ▾</span><span class="hn">replaces the REPL while paused · Alt+F8 evaluates a selection</span></div>
+        <div class="evnote" id="evNote">⚠ <b>May modify editor state</b> — changes join Run #14's transaction, “Dream: batch_rename.py #14”.</div>
+        <div class="out grow">
+          <div class="echo">asset.get_name()</div>
+          <div class="res">'Crate_Large'</div>
+          <div class="echo">naming.conform(name, prefix)</div>
+          <div class="res">'SM_Crate_Large'</div>
+          <div class="echo">asset.set_editor_property("lod_group", "SmallProp")</div>
+        </div>
+        <div class="prompt small"><span class="ps">&gt;&gt;&gt;</span><span>asset.get_editor_property(<span class="s">"lod_group"</span>)<span class="cursor"></span></span></div>
+      </div>
+    </div>
+    <div class="vsplit"></div>
+
+    <!-- right: stack, variables, watches -->
+    <div class="pcol">
+      <div class="panel-head" id="csHead">Call stack <span class="hn l">paused on breakpoint</span></div>
+      <div class="stack">
+        <div class="fr on"><span class="arr">➤</span><span class="fn">fix_name</span><span class="loc">batch_rename.py:27</span></div>
+        <div class="fr"><span class="arr"></span><span class="fn">_apply_one</span><span class="loc">studio_tools/naming.py:74</span></div>
+        <div class="fr"><span class="arr"></span><span class="fn">batch_apply</span><span class="loc">studio_tools/naming.py:58</span></div>
+        <div class="fr"><span class="arr"></span><span class="fn">&lt;module&gt;</span><span class="loc">batch_rename.py:33 · cell [2]</span></div>
+        <div class="fr hid">▸ 3 Dream runner frames hidden</div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="panel-head" id="varHead">Variables <span class="hn l">frame fix_name</span><span class="hn">lazy · no getters</span></div>
+      <div class="sec">Locals</div>
+      <div class="vars">
+        <div class="r"><span>i</span><span><span class="ty">int</span> 8</span></div>
+        <div class="r"><span><span class="tw">▸</span> data</span><span><span class="ty">AssetData</span> Crate_Large</span></div>
+        <div class="r sel"><span><span class="tw">▾</span> asset</span><span><span class="ty">StaticMesh</span> /Game/Props/Crate_Large</span></div>
+        <div class="r" id="varProps"><span class="l2 grp">▾ editor properties (31)</span><span class="dimv">read with get_editor_property on expand</span></div>
+        <div class="r"><span class="l3">lod_group</span><span><span class="ty">Name</span> 'LargeProp'</span></div>
+        <div class="r"><span class="l3">light_map_resolution</span><span><span class="ty">int</span> 64</span></div>
+        <div class="r"><span class="l3"><span class="tw">▸</span> nanite_settings</span><span><span class="ty">MeshNaniteSettings</span> {…}</span></div>
+        <div class="r"><span class="l3"><span class="tw">▸</span> static_materials</span><span><span class="ty">Array</span>[StaticMaterial] (3)</span></div>
+        <div class="r"><span class="l2 grp">▸ class</span><span>StaticMesh ← StreamableRenderAsset</span></div>
+        <div class="r"><span>name</span><span><span class="ty">str</span> 'Crate_Large'</span></div>
+        <div class="r"><span>new_name</span><span><span class="ty">str</span> 'SM_Crate_Large'</span></div>
+      </div>
+      <div class="sec">Globals · Session</div>
+      <div class="vars">
+        <div class="r"><span><span class="tw">▸</span> assets</span><span><span class="ty">list</span>[AssetData] (12)</span></div>
+        <div class="r"><span><span class="tw">▸</span> <span class="al">sel_assets</span></span><span><span class="ty">list</span>[AssetData] (12) · selection as of 12:43:08</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="panel-head" id="watchHead">Watch</div>
+      <div class="sec" id="safeSec"><span class="tagsafe">safe</span> <i>refresh automatically</i></div>
+      <div class="vars watch">
+        <div class="r"><span>len(sel_assets)</span><span>12</span><span></span></div>
+        <div class="r"><span>data.package_name</span><span>'/Game/Props/Crate_Large'</span><span></span></div>
+      </div>
+      <div class="sec" id="manSec"><span class="tagman">manual</span> <i>may run code · evaluated only when you click ⟳</i></div>
+      <div class="vars watch">
+        <div class="r"><span>naming.prefix_for(asset)</span><span>'SM_' <span class="dimv">· 12:43:49</span></span><span class="rf">⟳</span></div>
+        <div class="r" id="manRow"><span>asset.get_path_name()</span><span class="dimv">not evaluated</span><span class="rf" id="manRf">⟳</span></div>
+        <div class="r"><span style="color:var(--text-lo);font-family:var(--ui)">＋ Add watch</span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="pfoot" id="pwFoot"><span>Paused 00:42</span><span class="lo" id="replNote">The REPL is suspended; use Evaluate · editor close and PIE start are refused while paused</span><span class="spacer"></span><span class="nt">ⓘ Pauses inside Slate tick callbacks are refused (viewport_hud.py:41 skipped)</span></div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#pwTitle" data-at="tl" data-dx="-4" data-dy="2"><div class="num">1</div></div>
+<div class="callout" data-for="#pwStop" data-at="tr" data-dx="6" data-dy="-2"><div class="num">2</div></div>
+<div class="callout" data-for="#srcHead" data-at="r" data-dx="-96"><div class="num">3</div></div>
+<div class="callout" data-for="#csHead" data-at="r" data-dx="-16"><div class="num">4</div></div>
+<div class="callout" data-for="#varHead" data-at="r" data-dx="-108"><div class="num">5</div></div>
+<div class="callout" data-for="#safeSec" data-at="r" data-dx="-16"><div class="num">6</div></div>
+<div class="callout" data-for="#manRf" data-at="l" data-dx="-14"><div class="num">7</div></div>
+<div class="callout" data-for="#evNote" data-at="r" data-dx="-16"><div class="num">8</div></div>
+<div class="callout" data-for="#pwFoot" data-at="r" data-dx="16"><div class="num">9</div></div>
+<div class="callout" data-for="#ws07" data-at="l" data-dx="-16"><div class="num">10</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>The Paused window.</b> One modal window holds the whole 1.0 debugger: call stack, variables, watches, an evaluate console and a read-only source view. It opens at the pause, remembers its size and position, and is parented to a user's open slow-task dialog when there is one. It never uses the engine's debugging mode, so <code>unreal.*</code> calls in watches return real values.</span></div>
+  <div><span class="num">2</span><span><b>Stepping keys.</b> Continue F5, Step over F10, Step into F11, Step out Shift+F11, Stop Shift+F5. Run to cursor is Ctrl+F10 with the caret in the source view. Stop raises <code>ScriptCancelled</code>, so the run ends as <code>cancelled</code> with no rollback. Esc stops when focus is not in a text field; in the evaluate console or a watch edit, Esc first closes completion, then clears or cancels the input.</span></div>
+  <div><span class="num">3</span><span><b>Read-only source.</b> The paused line has a yellow arrow and tint; the gutter shows a conditional breakpoint (27), a disabled one (22), a logpoint (28) and a plain breakpoint (34). F9 toggles a breakpoint here, and Shift+F9 or right-click a glyph edits a condition here; the tab's gutter is unreachable while paused.</span></div>
+  <div><span class="num">4</span><span><b>Call stack.</b> Frames run from the cell into <code>studio_tools/naming.py</code> and back. Clicking a frame shows its source and switches Variables, Watch and Evaluate to it. Dream's own runner frames are hidden.</span></div>
+  <div><span class="num">5</span><span><b>Lazy, UObject-aware variables.</b> Nothing is read until you expand it. Unreal properties are read with <code>get_editor_property</code> on expand, never through attribute getters, and containers page 100 items at a time.</span></div>
+  <div><span class="num">6</span><span><b>Safe watches</b> refresh automatically while paused and after each run. They may use names, attribute reads through the safe resolver, literal subscripts and a short list of built-ins such as <code>len</code>, <code>type</code> and <code>isinstance</code>.</span></div>
+  <div><span class="num">7</span><span><b>Manual watches.</b> Any other expression, such as a method call, is marked “may run code” and is evaluated only when you click ⟳. The time of the last evaluation is shown.</span></div>
+  <div><span class="num">8</span><span><b>Evaluate.</b> Runs any expression or statement in the selected frame on the game thread. It can modify editor state, and those edits land in the run's transaction and share its fate: Run #14 renames assets, so its undo history is cleared when it ends (RUN-07).</span></div>
+  <div><span class="num">9</span><span><b>Pause rules.</b> The footer says the REPL is suspended. Pauses happen only in Dream debug runs, on the game thread. A breakpoint inside a Python Slate or ticker callback is skipped with a notice and the callback continues. Editor close and PIE start are refused while paused.</span></div>
+  <div><span class="num">10</span><span><b>The editor behind.</b> While this modal is open only the modal, tooltips and notifications are drawn, and input to every other window is ignored. The editor keeps the frame it painted before the run, undimmed, with the output area above the code as by default: WS-07 still reads <code>Dream · Starting · Run #14</code> and shows no Paused state (screen readers and the API still get it). Docked debug panels are Later.</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+</body></html>

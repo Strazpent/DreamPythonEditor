@@ -1,0 +1,432 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x2110">
+<title>Settings and trust</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .stage { display: flex; gap: 20px; align-items: flex-start; }
+  #prefsWin { width: 960px; height: 1110px; }
+  .rcol { width: 572px; display: flex; flex-direction: column; }
+  #pseWin { height: 871px; }
+
+  /* Editor Preferences: left navigation */
+  .snav { width: 220px; background: var(--bg1); padding: 6px 0; font-size: 12px; overflow: hidden; }
+  .sn-cat { padding: 8px 12px 3px; color: var(--text-hi); font-weight: 600; font-size: 12.5px; }
+  .sn-it { padding: 3px 12px 3px 22px; color: var(--text); }
+  .sn-it.open { color: var(--text-hi); }
+  .sn-sub { padding: 3px 12px 3px 40px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .sn-sub.on { background: var(--accent-lo); color: var(--text-hi); box-shadow: inset 3px 0 0 var(--accent); }
+  .sn-sub .lk { margin-left: auto; font-size: 10px; }
+  .sn-hint { margin: 16px 10px 0; padding: 8px 9px; border: 1px solid #2c2c2c; border-radius: 3px; background: #181818; color: var(--text-lo); font-size: 11px; line-height: 1.45; }
+  .sn-hint b { color: var(--text); font-weight: 600; }
+
+  /* Editor Preferences: details pane */
+  .details { background: var(--bg2); overflow: hidden; }
+  .details > * { flex: none; }
+  .ph { display: flex; align-items: flex-start; gap: 6px; padding: 12px 12px 10px 14px; border-bottom: 1px solid #111; }
+  .ph-title { font: 600 18px var(--ui); color: var(--text-hi); }
+  .ph-sub { color: var(--text-lo); font-size: 11.5px; margin-top: 2px; }
+  .btn.sm { padding: 3px 10px; font-size: 11.5px; white-space: nowrap; }
+  .layers { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: #171c22; border-bottom: 1px solid #111; font-size: 11px; color: var(--text-lo); }
+  .layers .lbl { color: var(--text); font-weight: 600; margin-right: 4px; white-space: nowrap; }
+  .ly { padding: 1px 8px; border-radius: 9px; font-size: 10.5px; white-space: nowrap; }
+  .ly.pol { background: #4a3410; color: #ffcf70; }
+  .ly.proj { background: var(--accent-lo); color: #bfe0ff; }
+  .ly.usr { background: #1d4a22; color: #b4f0b8; }
+  .layers .gt { color: #666; }
+  .layers .note { margin-left: 10px; white-space: nowrap; }
+  .sbar { padding: 7px 14px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #111; }
+  .sbox { flex: 1; height: 24px; background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; display: flex; align-items: center; padding: 0 8px; color: var(--text-lo); gap: 6px; }
+  .sbar .opt { color: var(--text-lo); font-size: 11px; white-space: nowrap; }
+
+  .chead { height: 26px; background: #262626; display: flex; align-items: center; gap: 7px; padding: 0 12px; font-weight: 600; color: var(--text-hi); border-bottom: 1px solid #111; border-top: 1px solid #2e2e2e; }
+  .chead .ar { color: var(--text-lo); width: 10px; font-size: 10px; }
+  .chead .aux { margin-left: auto; font-weight: 400; color: var(--text-lo); font-size: 11px; }
+  .prop { display: grid; grid-template-columns: 232px 1fr 70px; align-items: center; min-height: 26px; padding: 0 12px 0 28px; border-bottom: 1px solid #141414; background: #1b1b1b; }
+  .prop > span:first-child { color: var(--text); border-right: 1px solid #262626; height: 100%; display: flex; align-items: center; }
+  .prop .val { padding-left: 10px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .prop .val .combo { height: 20px; padding: 0 8px; font-size: 11.5px; }
+  .prop .hint { color: var(--text-lo); font-size: 11px; white-space: nowrap; }
+  .prop .lnk { color: var(--info); font-size: 11px; white-space: nowrap; }
+  .numbox { background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; height: 20px; width: 52px; padding: 0 6px; display: flex; align-items: center; font-family: var(--mono); font-size: 11.5px; color: var(--text-hi); }
+  .pathv { font-family: var(--mono); font-size: 11.5px; color: var(--text); white-space: nowrap; }
+  .tag { justify-self: end; white-space: nowrap; font: 600 9px/14px var(--ui); letter-spacing: .4px; text-transform: uppercase; padding: 0 6px; border-radius: 7px; }
+  .tag.pol { background: #4a3410; color: #ffcf70; }
+  .tag.proj { background: var(--accent-lo); color: #bfe0ff; }
+  .tag.usr { background: #1d4a22; color: #b4f0b8; }
+  .tag.def { background: #2e2e2e; color: #9a9a9a; }
+  .locked { color: var(--text-lo); }
+  .locked .lv { color: var(--text-hi); }
+  .locked .why { color: #e0b060; font-size: 11px; white-space: nowrap; }
+  .prop.lockrow { background: #1d1a14; }
+
+  /* keymap */
+  .kmwrap { background: #1b1b1b; padding: 4px 12px 8px 28px; border-bottom: 1px solid #141414; }
+  .km { border: 1px solid #2c2c2c; border-radius: 3px; overflow: hidden; }
+  .km .kr { display: grid; grid-template-columns: 236px 164px 150px 1fr; align-items: center; height: 23px; padding: 0 8px; border-bottom: 1px solid #222; }
+  .km .kr:last-child { border-bottom: none; }
+  .km .kh { background: #232323; color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
+  .km .kr .st { color: var(--text-lo); font-size: 11px; justify-self: end; }
+  .km .kr.conf { background: rgba(255,179,0,.09); box-shadow: inset 3px 0 0 var(--warn); border-bottom: none; }
+  .km .kr.conf .st { color: var(--warn); font-weight: 600; }
+  .knote { background: rgba(255,179,0,.09); box-shadow: inset 3px 0 0 var(--warn); padding: 3px 10px 7px 32px; border-bottom: 1px solid #222; font-size: 11.5px; line-height: 1.45; color: #e8dcc0; }
+  .knote b { color: #ffd77a; font-weight: 600; }
+  .knote .acts { margin-top: 3px; color: var(--info); font-size: 11px; }
+  .knote .acts span { margin-right: 14px; }
+  .kc { display: inline-block; font: 11px/15px var(--mono); color: #e8e8e8; background: #2c2c2c; border: 1px solid #474747; border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; margin-right: 3px; }
+  .kc.w { border-color: #8a6a10; background: #3a3010; color: #ffe08a; }
+  .kalt { color: var(--text-lo); font-size: 10.5px; margin-left: 3px; }
+  .kmbar { display: flex; align-items: center; gap: 10px; padding: 6px 0 2px; font-size: 11.5px; }
+  .kmbar .hint { color: var(--text-lo); font-size: 11px; }
+
+  /* UE main-frame bottom bar */
+  .uebar { height: 26px; background: var(--bg3); border-top: 1px solid var(--line); display: flex; align-items: center; gap: 4px; padding: 0 6px; font-size: 11.5px; }
+  .pyb { font: 700 8.5px/12px var(--mono); color: #ffd54f; border: 1px solid #6b5a1e; border-radius: 2px; padding: 0 2px; }
+  .uebar .bi { padding: 0 9px; height: 20px; display: flex; align-items: center; gap: 6px; border-radius: 3px; }
+  .uebar .bi.box { background: var(--bg1); border: 1px solid var(--edge); color: var(--text-lo); min-width: 190px; }
+  .uebar .sep { width: 1px; height: 16px; background: var(--edge); }
+
+  /* floating Dream window */
+  .fw-title { height: 30px; background: var(--bg3); display: flex; align-items: center; border-bottom: 1px solid var(--line); padding: 0 0 0 4px; }
+  .fw-title .docktab { height: 26px; align-self: flex-end; }
+  .fw-title .wc { color: var(--text-lo); padding: 0 12px; font-size: 13px; }
+  .pse-body { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .infobar { height: 30px; background: #2a2414; border-bottom: 1px solid #3d3417; display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #f0deb0; font-size: 12px; }
+  .infobar .ib-act { color: var(--info); margin-left: auto; white-space: nowrap; }
+  .rbadge { font: 600 9.5px/14px var(--ui); padding: 0 6px; border-radius: 7px; background: #5a4a10; color: #ffe08a; }
+  .outmini { height: 150px; }
+  .dimmer { position: absolute; inset: 0; background: rgba(0,0,0,.42); z-index: 15; }
+
+  /* trust prompt */
+  .trust { width: 520px; left: 26px; top: 162px; }
+  .trust .dh { display: flex; align-items: center; gap: 9px; }
+  .trust .dh .wi { color: var(--warn); font-size: 16px; }
+  .trust p { margin: 0 0 9px; line-height: 1.45; }
+  .kvb { display: grid; grid-template-columns: 82px 1fr; gap: 6px 10px; padding: 9px 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 3px; margin-bottom: 10px; font-size: 12px; align-items: baseline; }
+  .kvb .kl { color: var(--text-lo); }
+  .kvb .mono { font-family: var(--mono); color: var(--text-hi); font-size: 12px; word-break: break-all; }
+  .kvb .cp { color: var(--info); font-family: var(--ui); font-size: 11px; margin-left: 8px; white-space: nowrap; }
+  .zone { color: #ffe08a; }
+  .choices { font-size: 11.5px; color: var(--text); line-height: 1.5; }
+  .choices div { display: grid; grid-template-columns: 82px 1fr; gap: 10px; margin-bottom: 4px; }
+  .choices b { color: var(--text-hi); font-weight: 600; }
+  .choices .mono { font-family: var(--mono); font-size: 11px; color: var(--text-hi); }
+  .undo-note { margin-top: 8px; color: var(--text-lo); font-size: 11px; }
+  .df .fh { margin-right: auto; color: var(--text-lo); font-size: 11px; align-self: center; }
+  .btn.focus { outline: 2px solid #4fa3ff; outline-offset: 1px; }
+  .btn.off { background: #262626; color: #6a6a6a; border: 1px dashed #444; }
+
+  .vlabel { margin: 18px 0 8px; color: var(--text-lo); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+  .vlabel .vt { font: 700 9.5px/16px var(--ui); letter-spacing: .5px; color: #111; background: #8a8a8a; padding: 0 6px; border-radius: 3px; }
+  .variant { position: relative; width: 100%; box-shadow: 0 10px 34px rgba(0,0,0,.6); }
+  .polnote { display: flex; gap: 9px; padding: 9px 10px; background: #1d1a14; border: 1px solid #4a3a18; border-radius: 3px; font-size: 11.5px; line-height: 1.5; color: #eadfc6; }
+  .polnote .pk { font-family: var(--mono); color: #ffcf70; font-size: 11px; }
+  /* v2 additions */
+  #prefsWin { height: 1272px; }
+  #pseWin { height: auto; }
+  .uebar .dream-item .sep { width: auto; height: auto; background: none; }
+  .uebar .dream-item { height: 20px; }
+  .pse-body .code { font: 12px/18px var(--mono); }
+  .pse-body .code .gutter div, .pse-body .code .lines div { height: 18px; }
+  .trustbar .msg { flex-basis: 100%; }
+  .sht.never .ue { grid-column: 2 / 5; }
+  .ly.mach { background: #4a2a10; color: #ffc08a; }
+  .ly.stud { background: #4a3410; color: #ffcf70; }
+  .ly.ppol { background: #3d3412; color: #f3dc8a; }
+  .ly.def { background: #2e2e2e; color: #a8a8a8; }
+  .tag.mach { background: #4a2a10; color: #ffc08a; }
+  .insp { margin: 0 12px 0 28px; padding: 8px 10px 9px; background: #15191e; border: 1px solid #2a3a4e; border-top: 0; border-radius: 0 0 3px 3px; font-size: 11.5px; }
+  .insp .ih { color: #a8c7ee; font-weight: 600; margin-bottom: 5px; }
+  .insp .ih span { color: var(--text-lo); font-weight: 400; }
+  .insp .ir { display: grid; grid-template-columns: 22px 128px 1fr 150px; align-items: center; height: 21px; border-bottom: 1px solid #1f2733; white-space: nowrap; }
+  .insp .ir:last-child { border-bottom: 0; }
+  .insp .ir .src { color: var(--text-lo); font-family: var(--mono); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; }
+  .insp .ir .v { color: var(--text-hi); font-family: var(--mono); font-size: 11px; justify-self: end; }
+  .insp .ir .v.no { color: #5f5f5f; }
+  .insp .ir.win { background: rgba(255,192,138,.07); }
+  .insp .ir .w { color: #ffc08a; font-weight: 700; }
+  .insp .ir .x { color: #6f6f6f; text-decoration: line-through; }
+  .prop.selrow { background: #1a2433; box-shadow: inset 0 1px 0 #2a3a4e, inset 0 -1px 0 #2a3a4e; }
+  .km .kr { grid-template-columns: 222px 145px 140px 1fr; height: 22px; }
+  .km .kr .sh { color: #e0b060; font-size: 11px; justify-self: end; white-space: nowrap; }
+  .km .kr .no { color: #4f4f4f; justify-self: end; }
+  .rcol { width: 572px; gap: 16px; }
+  .rcap { margin: 0 0 6px; color: var(--text-lo); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
+  .rcap b { color: var(--text); }
+  .trustbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 7px 12px; background: #2e2608; border-bottom: 1px solid #5a4a10; box-shadow: inset 3px 0 0 var(--warn); font-size: 12px; color: #f0deb0; }
+  .trustbar b { color: #fff3c4; }
+  .trustbar code { font-family: var(--mono); font-size: 11.5px; color: #fff3c4; }
+  .trustbar .btn { padding: 2px 10px; font-size: 11.5px; }
+  .trustbar .sub { flex-basis: 100%; color: #c9b26a; font-size: 11px; }
+  .page { background: var(--bg2); border: 1px solid var(--edge); border-radius: 4px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,.55); }
+  .page .phd { padding: 8px 12px; background: var(--bg3); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .page .phd b { color: var(--text-hi); font-size: 12.5px; }
+  .page .phd .dim { color: var(--text-lo); font-size: 11px; margin-left: auto; white-space: nowrap; }
+  .tf { display: grid; grid-template-columns: 1fr 140px 60px; align-items: center; height: 26px; padding: 0 12px; border-bottom: 1px solid #1d1d1d; font-size: 11.5px; white-space: nowrap; }
+  .tf .p { font-family: var(--mono); font-size: 11px; color: var(--text-hi); overflow: hidden; text-overflow: ellipsis; }
+  .tf .o { color: var(--text-lo); }
+  .tf .a { color: var(--info); justify-self: end; }
+  .tf .lk { justify-self: end; color: var(--text-lo); }
+  .pfoot2 { padding: 7px 12px; font-size: 11px; color: var(--text-lo); line-height: 1.45; background: #181818; }
+  .pfoot2 code { font-family: var(--mono); color: var(--text); }
+  .sht { display: grid; grid-template-columns: 118px 1fr 110px 60px; align-items: center; min-height: 24px; padding: 0 12px; border-bottom: 1px solid #1d1d1d; font-size: 11.5px; }
+  .sht.h { background: #232323; color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; min-height: 22px; }
+  .sht .ue { color: #e0b060; }
+  .sht .pr2 { color: var(--text-lo); font-size: 10.5px; justify-self: end; }
+  .sht.never { background: #13201a; }
+  .sht.never .ue { color: #9be8bf; }
+  .sht.fixed > span { padding: 3px 0; }
+  .sht > span .kc + .kc { margin-top: 2px; }
+  .sht.fixed .ue { line-height: 1.4; padding-right: 8px; }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — settings layers, the keymap, shadowed shortcuts and the trust prompt</div>
+<div class="subtitle-strip">Left: Editor Preferences › Plugins › Dream Python Editor, with the policy layers and an inspector that shows which layer set a value. Right: a file from an untrusted folder, the Trusted folders page and the Shadowed Unreal shortcuts page.</div>
+
+<div class="stage">
+<!-- ============ LEFT: Unreal main frame with Editor Preferences docked ============ -->
+<div class="win" id="prefsWin">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab active">⚙ Editor Preferences<span class="x">×</span></div>
+    <div class="docktab">Content Browser<span class="x">×</span></div>
+  </div>
+
+  <div class="row grow">
+    <div class="snav" id="snav">
+      <div class="sn-cat">General</div>
+      <div class="sn-it">Appearance</div>
+      <div class="sn-it">Keyboard Shortcuts</div>
+      <div class="sn-it">Loading &amp; Saving</div>
+      <div class="sn-it">Source Control</div>
+      <div class="sn-cat">Level Editor</div>
+      <div class="sn-it">Play</div>
+      <div class="sn-it">Viewports</div>
+      <div class="sn-cat">Plugins</div>
+      <div class="sn-it">Python</div>
+      <div class="sn-it open">▾ Dream Python Editor</div>
+      <div class="sn-sub">General</div>
+      <div class="sn-sub on" id="navExec">Execution</div>
+      <div class="sn-sub">Keymap</div>
+      <div class="sn-sub" id="navShadow">Shadowed Unreal shortcuts</div>
+      <div class="sn-sub" id="navTrust">Trusted folders</div>
+      <div class="sn-sub">Appearance</div>
+      <div class="sn-sub">Language Services <span class="lk">🔒</span></div>
+      <div class="sn-sub">Policy <span class="lk">🔒</span></div>
+      <div class="sn-it">Remote Control</div>
+      <div class="sn-hint"><b>Project defaults</b> live in <code>Config/DefaultEditor.ini</code> and are edited in <b>Project Settings › Plugins › Dream Python Editor</b>. UE's own Python settings are shown read-only with a link.</div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <div class="col grow details">
+      <div class="ph">
+        <div><div class="ph-title">Dream Python Editor</div>
+          <div class="ph-sub">Running, keymap and trust for Dream. Every row says which layer its value comes from.</div></div>
+        <div class="spacer"></div>
+        <div class="btn sm">Export…</div><div class="btn sm">Reset to Defaults</div>
+      </div>
+      <div class="layers" id="layers"><span class="lbl">Precedence</span>
+        <span class="ly mach">🔒 Machine policy</span><span class="gt">›</span>
+        <span class="ly stud">🔒 Studio policy</span><span class="gt">›</span>
+        <span class="ly ppol">🔒 Project policy</span><span class="gt">›</span>
+        <span class="ly usr">User</span><span class="gt">›</span>
+        <span class="ly proj">Project default</span><span class="gt">›</span>
+        <span class="ly def">Built-in</span>
+      </div>
+      <div class="sbar">
+        <div class="sbox" id="setSearch">⌕&nbsp; Search settings, commands and chords</div>
+        <span class="opt"><span class="chk"></span>Modified only</span>
+      </div>
+
+      <div class="chead"><span class="ar">▾</span>Execution</div>
+      <div class="prop"><span>Namespace mode</span><span class="val"><span class="combo">Session ▾</span><span class="hint">Session or Isolated · shown on the Run button</span></span><span class="tag usr">user</span></div>
+      <div class="prop"><span>One undo step per run</span><span class="val"><span class="chk on"></span><span>On</span><span class="hint">your value wins over the project default (Off)</span></span><span class="tag usr">user</span></div>
+      <div class="prop"><span>Run File in a transaction</span><span class="val"><span class="chk"></span><span>Off</span><span class="hint">Run in transaction is one click in the Run menu</span></span><span class="tag def">built-in</span></div>
+      <div class="prop selrow" id="presRow"><span>Run presentation</span><span class="val locked"><span>🔒</span><span class="lv">Run window</span><span class="why">Set by machine policy</span><span class="lnk" id="whyLink">Why this value? ▾</span></span><span class="tag mach">machine</span></div>
+      <div class="insp" id="inspector">
+        <div class="ih">Effective-value inspector · <span>run.presentation</span></div>
+        <div class="ir win"><span class="w">✓</span><span>Machine policy</span><span class="src">%ProgramData%\DreamPythonEditor\Policy.json</span><span class="v">"run_window" · locked</span></div>
+        <div class="ir"><span></span><span>Studio policy</span><span class="src">DREAM_POLICY_PATH = \\studio\pipeline\dream\Policy.json</span><span class="v no">not set</span></div>
+        <div class="ir"><span></span><span>Project policy</span><span class="src">&lt;Project&gt;/Config/Dream/Policy.json</span><span class="v no">not set</span></div>
+        <div class="ir"><span></span><span>User · global</span><span class="src">EditorSettings</span><span class="v"><span class="x">Live (docked) Preview</span></span></div>
+        <div class="ir"><span></span><span>Project default</span><span class="src">Config/DefaultEditor.ini</span><span class="v no">not set</span></div>
+        <div class="ir"><span></span><span>Built-in</span><span class="src">plugin default</span><span class="v">Run window</span></div>
+      </div>
+      <div class="prop"><span>Offer Interrupt cleanup after</span><span class="val"><span class="numbox">10</span><span class="hint">seconds in a handler after Stop</span></span><span class="tag def">built-in</span></div>
+      <div class="prop lockrow"><span>Debug server (debugpy)</span><span class="val locked" id="lockDbg"><span>🔒</span><span class="lv">Not allowed</span><span class="why">Set by studio policy</span><span class="hint">debug.allow_debug_server: false</span></span><span class="tag pol">studio</span></div>
+
+      <div class="chead"><span class="ar">▾</span>Keymap<span class="aux">Only while a Dream widget has keyboard focus</span></div>
+      <div class="prop"><span>Preset</span><span class="val"><span class="combo" id="presetCombo">Charcoal (default) ▾</span><span class="hint">also PyCharm · VS Code</span></span><span class="tag usr">user · global</span></div>
+      <div class="kmwrap">
+        <div class="km" id="keymap">
+          <div class="kr kh"><span>Command</span><span>Shortcut</span><span>Alternate</span><span class="st">Shadows in Unreal</span></div>
+          <div class="kr"><span>Run selection, or the buffer</span><span><span class="kc">Ctrl+Enter</span></span><span><span class="kc">Num Enter</span><span class="kalt">Win64</span></span><span class="no">—</span></div>
+          <div class="kr"><span>Run buffer · run line</span><span><span class="kc">Ctrl+Shift+Enter</span></span><span><span class="kc">Ctrl+Alt+Enter</span></span><span class="no">—</span></div>
+          <div class="kr" id="lineAdvRow"><span>Run line and advance</span><span><span class="kc">Alt+Enter</span></span><span></span><span class="no">—</span></div>
+          <div class="kr"><span>Run cell · and advance</span><span><span class="kc">Ctrl+Alt+Shift+Enter</span></span><span><span class="kc">Alt+Shift+Enter</span></span><span class="no">—</span></div>
+          <div class="kr" id="stopRow"><span>Stop</span><span><span class="kc">Esc</span><span class="kalt">no foreign dialog</span></span><span><span class="kc">Shift+F5</span></span><span class="sh">Unselect All · PIE Stop</span></div>
+          <div class="kr"><span>Debug run · Continue</span><span><span class="kc">F5</span></span><span></span><span class="no">—</span></div>
+          <div class="kr"><span>Run the tab's entry point</span><span><span class="kc">Ctrl+F5</span></span><span></span><span class="no">—</span></div>
+          <div class="kr"><span>Step over · into · out</span><span><span class="kc">F10</span><span class="kc">F11</span></span><span><span class="kc">Shift+F11</span></span><span class="sh">PIE step · Fullscreen</span></div>
+          <div class="kr"><span>Run to cursor · evaluate in frame</span><span><span class="kc">Ctrl+F10</span></span><span><span class="kc">Alt+F8</span></span><span class="no">—</span></div>
+          <div class="kr"><span>Toggle breakpoint · edit condition</span><span><span class="kc">F9</span></span><span><span class="kc">Shift+F9</span></span><span class="no">—</span></div>
+          <div class="kr conf"><span>Completion · parameter info</span><span><span class="kc w">Ctrl+Space</span></span><span><span class="kc">Ctrl+Shift+Space</span></span><span class="sh">Content Browser drawer</span></div>
+          <div class="kr"><span>Quick docs</span><span><span class="kc">Ctrl+Q</span></span><span></span><span class="no">—</span></div>
+          <div class="kr"><span>Quick fix · format document</span><span><span class="kc">Ctrl+.</span></span><span><span class="kc">Shift+Alt+F</span></span><span class="no">—</span></div>
+          <div class="kr conf"><span>Find · replace</span><span><span class="kc">Ctrl+F</span></span><span><span class="kc w">Ctrl+H</span></span><span class="sh">Show All</span></div>
+          <div class="kr conf"><span>Find in files</span><span><span class="kc w">Ctrl+Shift+F</span></span><span></span><span class="sh">Open Content Browser</span></div>
+          <div class="kr conf"><span>Go to line · go to definition</span><span><span class="kc w">Ctrl+G</span></span><span><span class="kc">F12</span></span><span class="sh">Regroup actors</span></div>
+          <div class="kr conf"><span>Next · previous error link</span><span><span class="kc w">F4</span></span><span><span class="kc">Shift+F4</span></span><span class="sh">Show Actor Details</span></div>
+          <div class="kr conf"><span>Next · previous problem</span><span><span class="kc w">F8</span></span><span><span class="kc">Shift+F8</span></span><span class="sh">Possess or Eject Player</span></div>
+          <div class="kr conf"><span>Tab moves focus (toggle)</span><span><span class="kc w">Ctrl+M</span></span><span></span><span class="sh">Move Selection to Current Level</span></div>
+          <div class="kr"><span>Undo Last Run</span><span><span class="kc">Ctrl+Alt+Z</span></span><span></span><span class="no">— inside Dream only</span></div>
+          <div class="kr"><span>Insert <code>sel</code> line · toggle comment</span><span><span class="kc">Ctrl+Shift+V</span></span><span><span class="kc">Ctrl+/</span></span><span class="no">—</span></div>
+          <div class="kr"><span>Palette · search everything</span><span><span class="kc">Ctrl+Shift+P</span></span><span><span class="kc">Shift Shift</span></span><span class="no">—</span></div>
+        </div>
+        <div class="kmbar"><span class="hint">22 of 46 commands · click a chord to rebind · the same bindings appear in Unreal's Keyboard Shortcuts</span><div class="spacer"></div>
+          <span class="btn sm">Reset to preset</span></div>
+      </div>
+
+      <div class="chead"><span class="ar">▾</span>Appearance</div>
+      <div class="prop" id="outPosRow"><span>Output position</span><span class="val"><span class="combo" style="white-space:nowrap">Top (Maya) ▾</span><span class="hint">or Bottom (PyCharm) · also View ▸ Output Position</span></span><span class="tag def">built-in</span></div>
+      <div class="chead"><span class="ar">▸</span>Language Services<span class="aux">🔒 language_services.* set by studio policy</span></div>
+    </div>
+  </div>
+
+  <div class="uebar">
+    <span class="bi">▤ Content Drawer</span><span class="bi">≡ Output Log</span><span class="bi">Cmd ▾</span><span class="bi box">Enter Console Command</span>
+    <div class="spacer"></div>
+    <span class="dream-item"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Run #15 not executed</span><span class="sep"></span>
+    <span class="bi">Derived Data</span><span class="bi">All Saved</span><span class="bi">Revision Control <span style="color:var(--ok)">✓</span></span>
+  </div>
+</div>
+
+<!-- ============ RIGHT: trust banner, trusted folders, shadowed shortcuts ============ -->
+<div class="rcol">
+<div>
+<div class="rcap"><b>Dream</b> · a file from a folder you have not trusted</div>
+<div class="win" id="pseWin">
+  <div class="fw-title"><div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div><div class="spacer"></div><span class="wc">–</span><span class="wc">☐</span><span class="wc">✕</span></div>
+  <div class="pse-body">
+    <div class="toolbar">
+      <div class="tb primary splitrun" style="opacity:.45"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+      <div class="tb"><span class="ico">⏵</span><span style="color:var(--text-lo)">Run Cell</span></div>
+      <div class="tb"><span class="ico">⏹</span><span style="color:var(--text-lo)">Stop</span></div>
+      <div class="tb"><span class="ico">🐞</span>Debug</div>
+    </div>
+    <div class="panel outarea" style="height:116px">
+      <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div></div>
+      <div class="out grow">
+        <div class="hdr" id="notExec"><b>▶ Run #15</b> fix_lod_groups.py <span class="ts">10:22:40 · <span style="color:var(--warn)">not executed</span> · untrusted location</span></div>
+        <div class="info" style="color:var(--text-lo)">Starting stopped at the trust check; nothing ran.</div>
+      </div>
+      <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+    </div>
+    <div class="splitter-h"></div>
+    <div class="etabs">
+      <div class="etab active"><span class="lang">PY</span>fix_lod_groups.py<span class="rbadge" id="tabBadge">restricted</span></div>
+      <div class="etab"><span class="lang">PY</span>Untitled-1<span class="x">×</span></div>
+      <div class="etab" style="color:var(--text-lo)">＋</div>
+    </div>
+    <div class="breadcrumb">D:\Downloads\ue_tools_pack › fix_lod_groups.py</div>
+    <div class="trustbar" id="trustBar"><span class="msg">🛡 Run is disabled: <code>D:\Downloads\ue_tools_pack</code> is not a trusted location.</span>
+      <span class="btn" id="btnTrust">Trust this folder</span><span class="btn" id="btnOnce">Run once</span><span class="btn">Learn more</span>
+      <span class="sub">Neither button has focus, so a repeated Ctrl+Enter cannot confirm it. Run once is not remembered and is written to the audit log.</span></div>
+    <div class="code" style="height:150px">
+      <div class="gutter"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div></div>
+      <div class="lines">
+<div><span class="s">"""Set the LOD group on every static mesh under a folder."""</span></div>
+<div><span class="c">import</span> unreal</div>
+<div></div>
+<div>ROOT <span class="o">=</span> <span class="s">"/Game/Environment/Props"</span></div>
+<div>sms <span class="o">=</span> unreal.<span class="f">get_editor_subsystem</span>(unreal.<span class="t">StaticMeshEditorSubsystem</span>)</div>
+<div><span class="c">for</span> path <span class="c">in</span> unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">list_assets</span>(ROOT):</div>
+<div>    sms.<span class="f">set_lod_group</span>(unreal.<span class="f">load_asset</span>(path), <span class="s">"LargeProp"</span>)</div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="ok">● Idle</span><span>Session</span>
+      <div class="spacer"></div>
+      <span class="warn">🛡 Restricted</span><span>UTF-8 · CRLF</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div>
+<div class="rcap"><b>Settings › Trusted folders</b></div>
+<div class="page" id="trustPage">
+  <div class="phd"><b>Trusted folders</b><span class="dim">files here run without asking · per user</span></div>
+  <div class="tf"><span class="p">D:\Projects\CitySample</span><span class="o">the project · built-in</span><span class="lk">—</span></div>
+  <div class="tf"><span class="p">Dream library folders (user, project)</span><span class="o">built-in</span><span class="lk">—</span></div>
+  <div class="tf"><span class="p">UE AdditionalPaths (2)</span><span class="o">Project Settings › Python</span><span class="lk">—</span></div>
+  <div class="tf"><span class="p">\\studio\pipeline\ue</span><span class="o">studio policy · trust.roots</span><span class="lk">🔒</span></div>
+  <div class="tf" id="tfUser"><span class="p">D:\Tools\ue_scripts</span><span class="o">you · 2026-09-02</span><span class="a">Remove</span></div>
+  <div class="pfoot2">Trust is per folder for local files. Studio libraries use hash pins instead. Run once never adds an entry here. A policy with <code>trust.allow_user_trust: false</code> locks this list.</div>
+</div>
+</div>
+
+<div>
+<div class="rcap"><b>Settings › Shadowed Unreal shortcuts</b></div>
+<div class="page" id="shadowPage">
+  <div class="phd"><b>Shadowed Unreal shortcuts</b><span class="dim">only while a Dream widget has keyboard focus</span></div>
+  <div class="sht h"><span>Chord</span><span>Unreal command it shadows</span><span>Dream command</span><span style="justify-self:end">Preset</span></div>
+  <div class="sht"><span class="kc">Ctrl+Space</span><span class="ue">Open Content Browser drawer</span><span>Completion</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">Ctrl+H</span><span class="ue">Show All (Level Editor)</span><span>Replace</span><span class="pr2">Charcoal · VS Code</span></div>
+  <div class="sht"><span class="kc">Ctrl+Shift+F</span><span class="ue">Open Content Browser (Level Editor)</span><span>Find in files</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">Ctrl+G</span><span class="ue">Regroup actors (Level Editor)</span><span>Go to line</span><span class="pr2">all</span></div>
+  <div class="sht"><span><span class="kc">F10</span><span class="kc">F11</span></span><span class="ue">PIE step (Blueprint break); viewport</span><span>Step over · into</span><span class="pr2">Charcoal · VS Code</span></div>
+  <div class="sht"><span class="kc">Shift+F11</span><span class="ue">Fullscreen</span><span>Step out</span><span class="pr2">Charcoal · VS Code</span></div>
+  <div class="sht"><span class="kc">F4</span><span class="ue">Show Actor Details (Level Editor)</span><span>Next error link</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">F8</span><span class="ue">Possess or Eject Player (PIE)</span><span>Next problem (PyCharm: Step over)</span><span class="pr2">all</span></div>
+  <div class="sht"><span><span class="kc">Ctrl+PgUp</span><span class="kc">Ctrl+PgDn</span></span><span class="ue">Bring selection forward / Send selection backward a snap layer (Level Editor)</span><span>Switch tab</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">Ctrl+M</span><span class="ue">Move Selection to Current Level</span><span>Tab moves focus</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">Ctrl+Shift+K</span><span class="ue">Actor snap toggle (Level Editor)</span><span>Delete line</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">Esc</span><span class="ue">Unselect All (Level Editor); PIE Stop</span><span>Stop, during a run</span><span class="pr2">all</span></div>
+  <div class="sht fixed"><span style="color:var(--text-hi)">Consume list</span><span class="ue">Ctrl+Z/Y, Ctrl+Shift+Z, Ctrl+X/C/V/A, Ctrl+D, Ctrl+S, Ctrl+W, Delete, Backspace, End, Shift+End, Ctrl+End, Ctrl+Shift+PgUp/PgDn: undo and redo, cut, actor copy and paste, duplicate, save level, close tab, delete actors, snapping and snap layers</span><span>Text editing</span><span class="pr2">all</span></div>
+  <div class="sht fixed"><span style="color:var(--text-hi)">Typed characters</span><span class="ue">H, Shift+H, K, M, T, /, Shift+1–9, Shift+letters: hierarchy visibility, level current, editor modes, surface selection</span><span>Text input</span><span class="pr2">all</span></div>
+  <div class="sht fixed"><span style="color:var(--text-hi)">Extension</span><span class="ue">Ctrl+N New Level, Ctrl+E / Ctrl+Shift+E Edit Asset(s), Ctrl+Alt+S Save Current Level As, Ctrl+Alt+D / Ctrl+Shift+D select children and descendants, Ctrl+Shift+A Select All Actors of Same Class (Charcoal, VS Code), Ctrl+H Show All (PyCharm), Ctrl+Shift+G Allow Group Selection, Ctrl+Shift+. / , / ; Recompile Changed Shaders, Profile GPU, Build Lighting</span><span>Consumed, no action</span><span class="pr2">all</span></div>
+  <div class="sht"><span class="kc">Ctrl+B</span><span class="ue">Browse to Asset</span><span>Go to definition</span><span class="pr2">PyCharm</span></div>
+  <div class="sht"><span class="kc">Ctrl+Shift+A</span><span class="ue">Select All Actors of Same Class</span><span>Palette</span><span class="pr2">PyCharm</span></div>
+  <div class="sht"><span class="kc">F2</span><span class="ue">Rename (Level Editor)</span><span>Next problem</span><span class="pr2">PyCharm</span></div>
+  <div class="sht"><span class="kc">Ctrl+P</span><span class="ue">Open Asset</span><span>Go to file</span><span class="pr2">VS Code</span></div>
+  <div class="sht never" id="neverRow"><span><span class="kc">Ctrl+Tab</span></span><span class="ue">Never taken: Ctrl+Tab, F1 and Alt+F1 always stay with Unreal</span><span></span><span class="pr2"></span></div>
+  <div class="pfoot2">This page, Dream's keymap page and Unreal's Keyboard Shortcuts edit the same <code>DreamEditor</code> bindings in <code>EditorKeyBindings.ini</code>.</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#setSearch" data-at="r" data-dx="-20"><div class="num">1</div></div>
+<div class="callout" data-for="#layers" data-at="r" data-dx="-16"><div class="num">2</div></div>
+<div class="callout" data-for="#whyLink" data-at="r" data-dx="18"><div class="num">3</div></div>
+<div class="callout" data-for="#lockDbg" data-at="r" data-dx="-6"><div class="num">4</div></div>
+<div class="callout" data-for="#presetCombo" data-at="r" data-dx="150"><div class="num">5</div></div>
+<div class="callout" data-for="#stopRow" data-at="l" data-dx="-14"><div class="num">6</div></div>
+<div class="callout" data-for="#trustBar" data-at="tr" data-dx="-14" data-dy="14"><div class="num">7</div></div>
+<div class="callout" data-for="#notExec" data-at="r" data-dx="-16"><div class="num">8</div></div>
+<div class="callout" data-for="#tfUser" data-at="l" data-dx="-6"><div class="num">9</div></div>
+<div class="callout" data-for="#shadowPage" data-at="tl" data-dx="-4" data-dy="10"><div class="num">10</div></div>
+<div class="callout" data-for="#outPosRow" data-at="l" data-dx="12"><div class="num">11</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Where settings live.</b> Editor Preferences › Plugins › Dream Python Editor, split into pages. Search filters every page at once, including commands and chords. Settings are non-modal like the rest of Dream.</span></div>
+  <div><span class="num">2</span><span><b>Precedence.</b> A policy lock wins: machine policy (<code>%ProgramData%\DreamPythonEditor\Policy.json</code>, used only if it is admin-owned), then studio policy (<code>DREAM_POLICY_PATH</code>), then project policy (<code>&lt;Project&gt;/Config/Dream/Policy.json</code>). Otherwise your value (global or this project) wins, then the project default, then the built-in default.</span></div>
+  <div><span class="num">3</span><span><b>Effective-value inspector.</b> “Why this value?” lists every layer, its file and its value for this key, and marks the one that won. Here the machine policy forces the Run window, so your Live (docked) Preview choice is ignored.</span></div>
+  <div><span class="num">4</span><span><b>Locked by policy.</b> A padlock, the layer and the key. The debugpy socket is a documented, user-started exception to “every listener is authenticated”, and a policy key can forbid it, as here.</span></div>
+  <div><span class="num">5</span><span><b>Keymap presets.</b> Charcoal is the default; PyCharm and VS Code presets switch the chords in one step. The keymap is a global user setting, so it follows you across projects.</span></div>
+  <div><span class="num">6</span><span><b>The Charcoal keymap.</b> Stop is Esc (unless a script's own dialog is open) and Shift+F5, never Ctrl+Break. F5 debugs and continues, Ctrl+F5 runs the entry point, Ctrl+Space is the only completion chord, F4 walks error links, F8 walks Problems and Ctrl+M toggles whether Tab moves focus. Alt+Enter runs the line under the caret and moves to the next statement; the PyCharm preset leaves it unbound, because Alt+Enter is Quick fix there. No Unreal command binds Alt+Enter, so the Shadowed page lists nothing for it.</span></div>
+  <div><span class="num">7</span><span><b>The trust prompt is an inline banner.</b> Run is disabled for files outside trusted folders; the file still opens and edits. Trust this folder is remembered per user; Run once is not, and is audited. Default focus is on neither button.</span></div>
+  <div><span class="num">8</span><span><b>Not executed.</b> The trust check is the first step of <code>Starting</code>. A refused run still gets a number and the outcome <code>not executed</code>, and the status-bar item says so.</span></div>
+  <div><span class="num">9</span><span><b>Trusted folders.</b> Built-in roots (the project, the Dream libraries, UE AdditionalPaths), studio roots from policy, and the folders you trusted, which you can remove here.</span></div>
+  <div><span class="num">10</span><span><b>Shadowed Unreal shortcuts</b>, stated plainly: each chord Dream takes while focused, the Unreal command it hides, and the preset that adds it, computed from the main-frame bindings, the Level Editor command list and the consume list. Ctrl+Tab, F1 and Alt+F1 are never taken.</span></div>
+  <div><span class="num">11</span><span><b>Output position.</b> <code>layout.output_position</code>: Top, the default, puts the output area above the code as in Maya's Script Editor; Bottom is the PyCharm arrangement. A user setting with no policy key; View ▸ Output Position and the palette commands Move Output to Top / Bottom move it at once and keep its size.</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+</body></html>

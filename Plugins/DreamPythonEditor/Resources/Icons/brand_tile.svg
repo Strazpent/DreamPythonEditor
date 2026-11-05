@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#3B2F7A"/><stop offset="0.6" stop-color="#6A4BB0"/><stop offset="1" stop-color="#B07CC9"/></linearGradient></defs>
+<path fill="url(#sky)" d="M30 4 L98 4 A26 26 0 0 1 124 30 L124 98 A26 26 0 0 1 98 124 L30 124 A26 26 0 0 1 4 98 L4 30 A26 26 0 0 1 30 4 Z"/>
+<path fill="#FFFFFF" fill-opacity="0.3" fill-rule="evenodd" d="M73.6 112.6 L101.68 112.6 A9.36 9.36 0 0 0 103.84 94.24 A12.96 12.96 0 0 0 82.96 90.64 A8.64 8.64 0 0 0 70.36 96.76 A7.92 7.92 0 0 0 73.6 112.6 Z"/>
+<path fill="#FFD978" fill-rule="evenodd" d="M58.294 28.069 A38 38 0 1 0 91.332 79.987 A31 31 0 0 1 58.294 28.069 Z"/>
+<path fill="none" stroke="#8FE3C8" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round" d="M60 99.2 C78.72 100.64 93.12 89.12 91.68 73.28 C90.6 60.32 75.84 56 70.8 66.08 C67.2 74 75.12 80.48 81.6 74.72"/>
+<path fill="#FFFFFF" fill-rule="evenodd" d="M98 13 Q100.34 23.66 111 26 Q100.34 28.34 98 39 Q95.66 28.34 85 26 Q95.66 23.66 98 13 Z"/>
+<path fill="#FFFFFF" fill-opacity="0.8" fill-rule="evenodd" d="M26 92 Q27.08 96.92 32 98 Q27.08 99.08 26 104 Q24.92 99.08 20 98 Q24.92 96.92 26 92 Z"/>
+<path fill="#FFFFFF" fill-opacity="0.85" fill-rule="evenodd" d="M22.8 24 A3.2 3.2 0 1 1 29.2 24 A3.2 3.2 0 1 1 22.8 24 Z"/>
+<path fill="#FFFFFF" fill-opacity="0.7" fill-rule="evenodd" d="M107.4 66 A2.6 2.6 0 1 1 112.6 66 A2.6 2.6 0 1 1 107.4 66 Z"/>
+</svg>

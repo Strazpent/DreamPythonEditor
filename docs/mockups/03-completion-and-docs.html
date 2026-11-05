@@ -1,0 +1,373 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x1482">
+<title>Completion and docs</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .lo { color: var(--text-lo); }
+  .ph-r { font-weight: 400; text-transform: none; color: var(--text-lo); letter-spacing: 0; }
+
+  /* four zoomed panes inside one editor window */
+  .zrow { display: flex; }
+  .zrow.r1 { height: 524px; }
+  .zrow.r2 { height: 480px; }
+  .pane { position: relative; display: flex; flex-direction: column; background: var(--bg1); min-width: 0; flex: 1; }
+  .zoomhead { height: 28px; flex: none; background: #101722; border-bottom: 1px solid #1f2a38; display: flex; align-items: center; gap: 9px;
+              padding: 0 10px; font: 600 12.5px var(--ui); color: #d8e6f7; }
+  .zoomhead .letter { width: 19px; height: 19px; border-radius: 3px; background: #2b4a70; color: #fff; text-align: center; font: 700 11px/19px var(--ui); }
+  .zoomhead .ids { margin-left: auto; font: 11px var(--mono); color: #6b8fb8; font-weight: 400; }
+  .zoomhead .zm { color: #6b8fb8; font-weight: 400; font-size: 11px; }
+
+  /* zoom: slightly larger code than the main window */
+  .pane .code { font: 14px/21px var(--mono); }
+  .pane .gutter { min-width: 52px; }
+  .pane .gutter div, .pane .lines div { height: 21px; }
+  .pane .out { font: 13px/19px var(--mono); }
+  .pane .prompt { font: 14px/21px var(--mono); }
+  .pane .popup { font: 13px/21px var(--mono); }
+  .pane .doc { font: 12.5px/1.5 var(--ui); }
+  .gutter .bulb::before { content: "\1F4A1"; position: absolute; left: 6px; top: 0; font-size: 12px; }
+  .unused { color: #6e6e6e !important; }
+  .sdesc { font: 11.5px var(--ui); color: var(--text-lo); }
+  .it.on .sdesc { color: #b8cde3; }
+  .it .sdesc + .chips { margin-left: auto; }
+  .hov { background: rgba(255,255,255,.10); border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
+  .mouse { position: absolute; z-index: 12; width: 14px; height: 20px; }
+
+  /* completion popup */
+  .pane .popup.compl .it { gap: 8px; }
+  .phead { display: flex; align-items: center; gap: 7px; padding: 3px 8px; font: 12px/20px var(--ui); color: var(--text); background: #1d1d1e; border-bottom: 1px solid #3a3a3a; }
+  .phead code { font: 12.5px var(--mono); color: var(--text-hi); }
+  .phead .live-ty { font: 700 12.5px var(--mono); color: var(--cls); }
+  .grp { font: 600 10px/18px var(--ui); color: var(--text-lo); text-transform: uppercase; letter-spacing: .4px; padding: 0 8px 0 32px; border-top: 1px solid #333; background: #222223; }
+  .pfoot { font: 11px/22px var(--ui); color: var(--text-lo); padding: 0 8px; border-top: 1px solid #3a3a3a; background: #1d1d1e; }
+  .it .det { margin-left: auto; font: 11px var(--ui); color: var(--text-lo); padding-left: 10px; }
+  .it.on .det { color: #b8cde3; }
+  .it .args { color: #8f8f8f; }
+  .it.on .args { color: #b8cde3; }
+  .chips { width: 70px; display: flex; justify-content: flex-end; gap: 4px; flex: none; }
+  .chips .srcb, .dfoot .srcb, .dmeta .srcb, .phead .srcb { margin-left: 0; }
+  .chip { font: 600 9.5px/15px var(--ui); padding: 0 6px; border-radius: 8px; letter-spacing: .2px; }
+  .chip.live { background: #173d22; color: #7ee787; }
+  .chip.stub { background: #1f3047; color: #9ec5f0; }
+  .chip.proj { background: #4a3a12; color: #ffd77a; }
+  .chip.snip { background: #3a2450; color: #d6b4f5; }
+  .kind.sn { background: #6b4f8a; font-size: 9px; }
+
+  /* signature help */
+  .pane .sigpop .doc .sig { white-space: pre; font: 13px/20px var(--mono); }
+  .pane .sigpop .doc .sig b { background: #0e3a66; color: #fff; text-decoration: none; border-radius: 2px; padding: 0 2px; font-weight: 600; box-shadow: inset 0 -2px 0 var(--param); }
+  .pdoc { margin: 0 0 5px; }
+  .pdoc code, .dtext code { color: var(--param) !important; }
+  .dfoot { color: var(--text-lo); margin-top: 6px; border-top: 1px solid #3a3a3a; padding-top: 5px; display: flex; gap: 6px; align-items: center; font-size: 11.5px; }
+  .dfoot .spacer { flex: 1; }
+
+  /* hover card */
+  .pane .hovercard .doc .sig { font: 13px/20px var(--mono); color: var(--text-hi); }
+  .dsec { font: 600 10px var(--ui); color: var(--text-lo); text-transform: uppercase; letter-spacing: .4px; margin: 8px 0 2px; }
+  .dm { display: flex; gap: 10px; font-size: 12px; line-height: 20px; align-items: baseline; }
+  .dm code { font: 12px/20px var(--mono); color: var(--fn) !important; width: 310px; flex: none; }
+  .dm span { color: var(--text-lo); }
+  .dmeta { margin-top: 8px; padding-top: 6px; border-top: 1px solid #3a3a3a; display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-lo); }
+  .dmeta b { color: var(--text); font-weight: 600; }
+  .lnk { color: var(--info); text-decoration: underline; }
+  .key { font: 10.5px var(--mono); background: #333; color: var(--text-hi); border: 1px solid #4a4a4a; border-radius: 3px; padding: 0 4px; }
+
+  /* quick-fix menu */
+  .pane .popup.qf { font: 12.5px/23px var(--ui); }
+  .qf .qhead { display: flex; align-items: center; gap: 8px; padding: 2px 8px; font-size: 11px; line-height: 20px; color: var(--text-lo); border-bottom: 1px solid #3a3a3a; background: #1d1d1e; }
+  .qf .it .ic { width: 16px; text-align: center; font-size: 12px; }
+  .qf .sepl { border-top: 1px solid #3a3a3a; margin: 2px 0; }
+  .qf .hint { margin-left: auto; font: 11px var(--mono); color: var(--text-lo); padding-left: 12px; }
+  .qf .it.on .hint { color: #b8cde3; }
+
+  /* problems list */
+  .probs { flex: 1; border-bottom: 3px solid var(--line); min-height: 0; }
+  .plist { font: 12px/20px var(--ui); padding: 3px 0; }
+  .pg { padding: 0 10px; color: var(--text); display: flex; gap: 6px; align-items: center; }
+  .pr { display: grid; grid-template-columns: 16px 1fr 136px 40px; gap: 6px; padding: 0 10px 0 28px; align-items: start; }
+  .pr .w { color: var(--warn); }
+  .pr .msg { line-height: 18px; padding: 1px 0; }
+  .pr .rule { font: 11px/20px var(--mono); color: #c9b273; }
+  .pr .loc { color: var(--text-lo); font: 11px/20px var(--mono); text-align: right; }
+  .pr code { font: 11.5px var(--mono); color: var(--text-hi); }
+  .pr.sel { background: var(--accent-lo); }
+  .pv { font: 12px/20px var(--mono); margin: 1px 10px 2px 50px; padding: 0 8px; color: #d4d4d4; background: #1a1a1a; border-left: 2px solid #5a4a10; }
+  .pv .ln { color: #5a5a5a; margin-right: 10px; }
+
+  .status .lo { color: var(--text-lo); }
+  .legend code { font: 11.5px var(--mono); color: var(--text-hi); }
+  .pane .sigpop.up .doc .sig { white-space: pre; }
+  .pane .popup.epc { font: 13px/21px var(--mono); }
+  .epc .ty2 { margin-left: auto; font: 11px var(--ui); color: var(--text-lo); padding-left: 12px; }
+  .epc .it.on .ty2 { color: #b8cde3; }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — code intelligence: runtime completion, editor-property names, quick docs and diagnostics</div>
+<div class="subtitle-strip">Four zoomed views of the Dream tab. Runtime introspection of live editor objects is merged with the language server and the generated <code>unreal</code> stubs; ruff and <code>dream-check</code> (SUM codes) lint as you type.</div>
+
+<div class="win">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    <div class="docktab">Content Browser<span class="x">×</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+    <div class="tb"><span class="ico">⏵</span>Run Cell</div>
+    <div class="tb"><span class="ico">⏹</span><span style="color:var(--text-lo)">Stop</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="ico">🐞</span>Debug</div>
+    <div class="tb"><span class="ico">⟳</span>Reload Package</div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="chk on"></span>One undo step per run</div>
+    <div class="tb"><span class="chk on"></span>Echo input</div>
+    <div class="spacer"></div>
+    <div class="search">⌕&nbsp; Search everything (Shift Shift)</div>
+    <div class="tb">⚙</div>
+  </div>
+
+  <!-- ===================== row 1 ===================== -->
+  <div class="zrow r1">
+    <!-- A: REPL runtime completion -->
+    <div class="pane" id="paneA">
+      <div class="zoomhead"><span class="letter">A</span>REPL — Ctrl+Space on the selected actor<span class="zm">· zoomed</span><span class="ids">REPL-03 · INT-02 · INT-03</span></div>
+      <div class="panel-head"><div class="tabs"><span>Output</span><span class="on">REPL</span><span>Problems</span></div>
+        <div class="spacer"></div><span class="ph-r">Session · ⌕ &nbsp; Clear</span></div>
+      <div class="out grow">
+        <div class="hdr"><b>▶ Run #40</b> REPL <span class="ts">14:02:07 · ok</span></div>
+        <div class="echo">len(sel)</div>
+        <div class="res"># Result: 3</div>
+        <div class="hdr"><b>▶ Run #41</b> REPL <span class="ts">14:02:11 · ok</span></div>
+        <div class="echo">sel[0]</div>
+        <div class="res"># Result: &lt;Object '/Game/Maps/Lvl_Downtown.Lvl_Downtown:PersistentLevel.StaticMeshActor_57'</div>
+      </div>
+      <div class="prompt" id="promptA"><span class="ps">&gt;&gt;&gt;</span><span>sel[<span class="n">0</span>].<span class="cursor" id="curA"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+      <div class="splitter-h"></div>
+      <div class="etabs" style="flex:none"><div class="etab active"><span class="lang">PY</span>make_static.py<span class="dot"></span></div><div class="etab"><span class="lang">PY</span>Untitled-1<span class="x">×</span></div><div class="etab" style="color:var(--text-lo)">＋</div></div>
+
+      <div class="popup compl" id="complA" data-up="#curA" data-dx="-33" data-dy="-8" style="width:584px;">
+        <div class="phead" id="complHead"><code>sel[0]</code><span class="lo">is a</span><span class="live-ty">StaticMeshActor</span><span class="srcb runtime">runtime</span><span class="spacer"></span><span class="lo">static type: <code style="color:var(--text)">Actor</code></span></div>
+        <div class="it on"><span class="kind p">p</span>static_mesh_component<span class="det">StaticMeshComponent · read-only</span><span class="chips"><span class="srcb runtime">runtime</span></span></div>
+        <div class="it"><span class="kind m">ƒ</span><span>set_mobility<span class="args">(in_mobility)</span></span><span class="det">None</span><span class="chips"><span class="srcb runtime">runtime</span></span></div>
+        <div class="it"><span class="kind e">E</span>static_mesh_replicate_movement<span class="det">bool</span><span class="chips"><span class="srcb runtime">runtime</span></span></div>
+        <div class="it"><span class="kind e">E</span>static_mesh_physics_replication_mode<span class="det">PhysicsReplicationMode</span><span class="chips"><span class="srcb runtime">runtime</span></span></div>
+        <div class="grp" id="inhGrp">Inherited from Actor · known to both sources, shown once</div>
+        <div class="it"><span class="kind m">ƒ</span><span>get_actor_label<span class="args">()</span></span><span class="det">str</span><span class="chips"><span class="srcb static">static</span></span></div>
+        <div class="it"><span class="kind m">ƒ</span><span>set_actor_location<span class="args">(new_location, sweep, teleport)</span></span><span class="det">HitResult</span><span class="chips"><span class="srcb static">static</span></span></div>
+        <div class="it"><span class="kind p">p</span>root_component<span class="det">SceneComponent</span><span class="chips"><span class="srcb static">static</span></span></div>
+        <div class="grp" id="snipGrp">Postfix snippets</div>
+        <div class="it"><span class="kind sn">{}</span>.tx<span class="sdesc">wrap in ScopedEditorTransaction</span><span class="chips"><span class="srcb snippet">snippet</span></span></div>
+        <div class="it"><span class="kind sn">{}</span>.props<span class="sdesc">print every editor property</span><span class="chips"><span class="srcb snippet">snippet</span></span></div>
+        <div class="pfoot">10 of 187 · runtime lookup 1.8 ms · <b style="color:var(--text)">E</b> = editor property · Tab insert · Ctrl+Q docs</div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- B: editor-property names -->
+    <div class="pane" id="paneB">
+      <div class="zoomhead"><span class="letter">B</span>File tab — editor-property names in set_editor_property('…')<span class="zm">· zoomed</span><span class="ids">INT-02 · INT-04</span></div>
+      <div class="etabs">
+        <div class="etab active"><span class="lang">PY</span>make_static.py<span class="dot"></span></div>
+        <div class="etab"><span class="lang">PY</span>Untitled-1<span class="x">×</span></div>
+        <div class="etab"><span class="lang">PY</span>lod_audit.py<span class="x">×</span></div>
+      </div>
+      <div class="breadcrumb">Content/Python/tools › make_static.py › <span style="color:var(--text)">cell [1] Make the selection static</span></div>
+      <div class="code grow">
+        <div class="gutter">
+          <div>1</div><div>2</div><div class="fold">3</div><div>4</div><div>5</div><div>6</div><div>7</div><div class="mod">8</div><div class="cur mod">9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div>
+        </div>
+        <div class="lines">
+<div><span class="c">import</span> unreal</div>
+<div></div>
+<div class="cell-sep"><span class="m"># %% [1] Make the selection static, without shadows</span></div>
+<div><span class="c">for</span> actor <span class="c">in</span> sel:</div>
+<div>    comp <span class="o">=</span> actor.static_mesh_component</div>
+<div>    comp.<span class="f">set_editor_property</span>(<span class="s">"mobility"</span>, unreal.<span class="t">ComponentMobility</span>.STATIC)</div>
+<div></div>
+<div>    <span class="m"># small props should not cast shadows</span></div>
+<div class="curline">    comp.<span class="f">set_editor_property</span>(<span class="s">"cast_<span class="cursor" id="curB"></span>"</span>)</div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div class="cell-sep"><span class="m"># %% [2] Check</span></div>
+<div><span class="f">print</span>(<span class="f">len</span>(sel), <span class="s">"actors updated"</span>)</div>
+        </div>
+      </div>
+
+      <div class="popup sigpop up" id="sigB" data-up="#curB" data-dx="-290" data-dy="-1" style="width:600px;">
+        <div class="doc" style="padding:3px 10px 4px; position:relative">
+          <div class="sig" style="border:0; margin:0; padding:0; font-size:12.5px; line-height:18px">set_editor_property(<b id="actParam">name: str</b>, value: object,
+    notify_mode: PropertyAccessChangeNotifyMode = DEFAULT) -&gt; None</div>
+          <span class="srcb static" style="position:absolute; right:8px; bottom:6px">static</span>
+        </div>
+      </div>
+      <div class="popup compl epc" id="epcB" data-anchor="#curB" data-at="bl" data-dx="-120" data-dy="5" style="width:430px;">
+        <div class="phead" id="epcHead"><code>comp</code><span class="lo">is a</span><span class="live-ty">StaticMeshComponent</span><span class="spacer"></span><span class="srcb runtime">runtime</span></div>
+        <div class="it on"><span class="kind e">E</span>cast_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_dynamic_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_static_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_contact_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_far_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_inset_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_hidden_shadow<span class="ty2">bool</span></div>
+        <div class="it"><span class="kind e">E</span>cast_shadow_as_two_sided<span class="ty2">bool</span></div>
+        <div class="pfoot">8 of 10 editor properties matching “cast_” · read from the class's Editor Properties list</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="splitter-h"></div>
+
+  <!-- ===================== row 2 ===================== -->
+  <div class="zrow r2">
+    <!-- C: quick docs -->
+    <div class="pane" id="paneC">
+      <div class="zoomhead"><span class="letter">C</span>File tab — quick docs (Ctrl+Q) and hover<span class="zm">· zoomed</span><span class="ids">INT-05</span></div>
+      <div class="etabs">
+        <div class="etab active"><span class="lang">PY</span>set_static_mobility.py<span class="x">×</span></div>
+        <div class="etab"><span class="lang">PY</span>make_static.py<span class="dot"></span></div>
+      </div>
+      <div class="breadcrumb">Content/Python/tools › set_static_mobility.py</div>
+      <div class="code grow">
+        <div class="gutter">
+          <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div class="fold cur">6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div>
+        </div>
+        <div class="lines">
+<div><span class="c">import</span> unreal</div>
+<div></div>
+<div>actor_sub <span class="o">=</span> unreal.<span class="f">get_editor_subsystem</span>(unreal.<span class="t">EditorActorSubsystem</span>)</div>
+<div>actors <span class="o">=</span> actor_sub.<span class="f">get_selected_level_actors</span>()</div>
+<div></div>
+<div><span class="c">with</span> unreal.<span class="t hov" id="hovC">ScopedEditorTransaction</span>(<span class="s">"Set props to Static"</span>):</div>
+<div>    <span class="c">for</span> actor <span class="c">in</span> actors:</div>
+<div>        <span class="c">if</span> <span class="f">isinstance</span>(actor, unreal.<span class="t">StaticMeshActor</span>):</div>
+<div>            actor.<span class="f">set_mobility</span>(unreal.<span class="t">ComponentMobility</span>.STATIC)</div>
+<div></div>
+<div>unreal.<span class="f">log</span>(<span class="s">f"Checked </span>{<span class="f">len</span>(actors)}<span class="s"> actors"</span>)</div>
+        </div>
+      </div>
+
+      <div class="mouse" data-anchor="#hovC" data-at="c" data-dx="6" data-dy="-2"><svg width="14" height="20" viewBox="0 0 14 20"><path d="M1 1 L1 16 L4.8 12.6 L7.6 19 L10.2 17.9 L7.5 11.7 L12.6 11.7 Z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg></div>
+
+      <div class="popup hovercard" id="hoverCard" data-anchor="#hovC" data-at="bl" data-dx="-14" data-dy="6" style="width:560px;">
+        <div class="doc">
+          <div class="sig"><span class="k">class</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="p">desc</span>: <span class="t">Text</span> | <span class="t">str</span>)</div>
+          <div class="dtext">Type used to create and manage a scoped editor transaction in Python.</div>
+          <div class="dsec">Methods</div>
+          <div class="dm"><code>cancel() -&gt; None</code><span>cancel this transaction</span></div>
+          <div class="dm"><code>__enter__() -&gt; ScopedEditorTransaction</code><span>begin this transaction</span></div>
+          <div class="dm"><code>__exit__(type, value, traceback) -&gt; bool</code><span>end this transaction</span></div>
+          <div class="dmeta" id="hoverMeta">Module <code>unreal</code> · native type from <b>PythonScriptPlugin</b> · docstring generated from C++<span class="spacer"></span><span class="srcb static">static</span></div>
+          <div class="dfoot"><span id="f1Link"><span class="key">Ctrl+Q</span> pin as quick docs &nbsp;·&nbsp; <span class="lnk">↗ API reference</span> &nbsp;·&nbsp; <span class="key">F12</span> go to stub</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- D: diagnostics -->
+    <div class="pane" id="paneD">
+      <div class="zoomhead"><span class="letter">D</span>File tab — diagnostics, quick fixes and SUM lint<span class="zm">· zoomed</span><span class="ids">INT-07 · INT-08 · INT-09</span></div>
+      <div class="panel probs">
+        <div class="panel-head"><div class="tabs"><span>Output</span><span>REPL</span><span class="on">Problems <span class="badge warn">4</span></span></div>
+          <div class="spacer"></div><span class="ph-r" id="probScope">All open files ▾ &nbsp;·&nbsp; F8 next &nbsp;·&nbsp; <span style="color:var(--warn)">⚠</span> Warnings</span></div>
+        <div class="plist">
+          <div class="pg">▾ <b>group_props.py</b> <span class="lo">tools</span> <span class="badge warn">2</span></div>
+          <div class="pr"><span class="w">⚠</span><span class="msg"><code>os</code> imported but unused</span><span class="rule">F401 · ruff</span><span class="loc">1:8</span></div>
+          <div class="pr sel" id="probSum102"><span class="w">⚠</span><span class="msg"><code>lod_group</code> is not a Python attribute of <code>StaticMesh</code> (editor-only property); this assignment raises AttributeError. Use <code>set_editor_property</code>.</span><span class="rule">SUM102 · dream-check</span><span class="loc">9:9</span></div>
+          <div class="pg">▾ <b>move_legacy.py</b> <span class="lo">tools</span> <span class="badge warn">2</span></div>
+          <div class="pr" id="probUE"><span class="w">⚠</span><span class="msg" id="ueMsg"><code>os.rename</code> on a Content path breaks references. Use <code>unreal.EditorAssetLibrary.rename_asset</code></span><span class="rule">SUM301 · dream-check</span><span class="loc">14:5</span></div>
+          <div class="pv" id="uePreview"><span class="ln">14</span><span class="sqw">os.rename</span>(<span class="s">"/Game/Props/SM_Crate_Old"</span>, <span class="s">"/Game/Props/Archive/SM_Crate_Old"</span>)</div>
+          <div class="pr"><span class="w">⚠</span><span class="msg"><code>time.sleep</code> in a loop on the game thread freezes the editor</span><span class="rule">SUM202 · dream-check</span><span class="loc">22:9</span></div>
+        </div>
+      </div>
+      <div class="etabs">
+        <div class="etab active"><span class="lang">PY</span>group_props.py<span class="badge warn">2</span></div>
+        <div class="etab"><span class="lang">PY</span>move_legacy.py<span class="badge warn">2</span></div>
+      </div>
+      <div class="breadcrumb">Content/Python/tools › group_props.py</div>
+      <div class="code" style="height:203px; flex:none">
+        <div class="gutter">
+          <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div class="bulb cur">9</div>
+        </div>
+        <div class="lines">
+<div><span class="c unused">import</span> <span class="unused sqw" id="osD">os</span></div>
+<div><span class="c">import</span> unreal</div>
+<div></div>
+<div>registry <span class="o">=</span> unreal.<span class="t">AssetRegistryHelpers</span>.<span class="f">get_asset_registry</span>()</div>
+<div>props <span class="o">=</span> registry.<span class="f">get_assets_by_path</span>(<span class="s">"/Game/Props"</span>, <span class="p">recursive</span><span class="o">=</span><span class="k">True</span>)</div>
+<div><span class="c">for</span> data <span class="c">in</span> props:</div>
+<div>    mesh <span class="o">=</span> data.<span class="f">get_asset</span>()</div>
+<div>    <span class="c">if</span> <span class="f">isinstance</span>(mesh, unreal.<span class="t">StaticMesh</span>):</div>
+<div class="curline">        <span class="sqw" id="lodD">mesh.lod_group <span class="o">=</span> <span class="s">"LargeProp"</span></span></div>
+        </div>
+      </div>
+
+      <div class="popup qf" id="qfMenu" data-anchor="#lodD" data-at="tl" data-dx="175" data-dy="-142" style="width:452px;">
+        <div class="qhead">Quick fixes · SUM102<span class="spacer"></span><span class="pill">Ctrl+.</span></div>
+        <div class="it on"><span class="ic">💡</span>Rewrite as <code style="font:11.5px var(--mono)">mesh.set_editor_property("lod_group", "LargeProp")</code></div>
+        <div class="it"><span class="ic">💡</span>Rewrite every SUM102 in this file</div>
+        <div class="it"><span class="ic" style="color:var(--text-lo)">⊘</span>Ignore SUM102 on this line<span class="hint"># noqa: SUM102</span></div>
+        <div class="sepl"></div>
+        <div class="it"><span class="ic" style="color:var(--text-lo)">?</span>Explain rule SUM102<span class="hint">dream-check docs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="ok">● Idle</span>
+    <span>Session</span>
+    <span id="statLang">Language server <span class="ok">✓</span></span>
+    <span>Ruff <span class="ok">✓</span> <span class="lo">38 ms</span></span>
+    <span>dream-check <span class="ok">✓</span></span>
+    <span>Stubs <span class="ok">✓</span> <span class="lo">5.8 · split · generated 14:01</span></span>
+    <span>Runtime completion <span class="ok">✓</span> <span class="lo">1.8 ms</span></span>
+    <span class="warn">⚠ 4 problems</span>
+    <div class="spacer"></div>
+    <span>group_props.py</span><span>Ln 9, Col 9</span><span>UTF-8 · LF</span>
+  </div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#complHead" data-at="r" data-dx="18"><div class="num">1</div></div>
+<div class="callout" data-for="#inhGrp" data-at="r" data-dx="18"><div class="num">2</div></div>
+<div class="callout" data-for="#sigB" data-at="tr" data-dx="2" data-dy="14"><div class="num">3</div></div>
+<div class="callout" data-for="#epcHead" data-at="r" data-dx="18"><div class="num">4</div></div>
+<div class="callout" data-for="#hoverCard" data-at="tr" data-dx="16" data-dy="14"><div class="num">5</div></div>
+<div class="callout" data-for="#f1Link" data-at="r" data-dx="24"><div class="num">6</div></div>
+<div class="callout" data-for="#qfMenu" data-at="tr" data-dx="18" data-dy="12"><div class="num">7</div></div>
+<div class="callout" data-for="#probSum102" data-at="l" data-dx="2"><div class="num">8</div></div>
+<div class="callout" data-for="#probScope" data-at="l" data-dx="-18"><div class="num">9</div></div>
+<div class="callout" data-for="#statLang" data-at="t" data-dy="-16"><div class="num">10</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Ctrl+Space and the runtime type.</b> The header says what <code>sel[0]</code> is right now, a <code>StaticMeshActor</code>, while static analysis only knows <code>Actor</code>. The resolver follows names and literal indexes, calls nothing, and took 1.8 ms of its 5 ms budget.</span></div>
+  <div><span class="num">2</span><span><b>Merged, ranked sources.</b> Every item has a source badge: <code>runtime</code>, <code>static</code>, <code>keyword</code> or <code>snippet</code>. In the REPL, runtime members rank first. A name both sources know appears once, with the static signature. Snippets come last.</span></div>
+  <div><span class="num">3</span><span><b>Signature help.</b> It opens on <code>(</code> and highlights the parameter being typed, here <code>name</code>. It sits above the line so the completion list can open below.</span></div>
+  <div><span class="num">4</span><span><b>Editor-property names.</b> Inside <code>set_editor_property('…')</code> and <code>get_editor_property('…')</code> the list holds the class's editor properties with their types. Names come from the class's Editor Properties docstring list; no getter is called.</span></div>
+  <div><span class="num">5</span><span><b>Quick docs.</b> Ctrl+Q shows the card for the symbol at the caret; resting the mouse shows the same card. It holds the signature, the docstring generated from C++, the methods and the owning module and plugin.</span></div>
+  <div><span class="num">6</span><span><b>Pin, reference, stub.</b> Ctrl+Q again pins the card. ↗ opens the online Python API page; F12 opens the read-only stub. F1 stays with Unreal.</span></div>
+  <div><span class="num">7</span><span><b>Quick fix, Ctrl+.</b> SUM102 rewrites <code>obj.prop = v</code> as <code>obj.set_editor_property("prop", v)</code>. The light bulb marks the line. The PyCharm preset uses Alt+Enter.</span></div>
+  <div><span class="num">8</span><span><b>SUM lint codes.</b> <code>dream-check</code> runs out of process. SUM1xx is the Unreal API (SUM101 unknown name; SUM102 by default only where an attribute write cannot work, such as an editor-only property, which raises AttributeError, or a read-only one; SUM103 deprecated; SUM104 actor edits in a loop without a transaction, only when One undo step per run is off), SUM2xx threads and the game thread, SUM3xx files. An off-by-default SUM102 variant also flags writes that skip edit-change notifications.</span></div>
+  <div><span class="num">9</span><span><b>Problems.</b> Problems from all open files, grouped by file, with rule code and source. F8 and Shift+F8 walk them. A run's uncaught exception also appears here as a <code>runtime</code> item.</span></div>
+  <div><span class="num">10</span><span><b>Language service health.</b> The language server, ruff, <code>dream-check</code>, the stubs and runtime completion each show their state. After repeated crashes this reads “Language features paused — Restart / View log”; typing and running are never blocked.</span></div>
+</div>
+</div>
+<script>
+  // Page-specific: popups that open upward (the REPL prompt sits at the bottom of the output area, above the code).
+  document.querySelectorAll("[data-up]").forEach(function (el) {
+    var t = document.querySelector(el.dataset.up), host = el.offsetParent.getBoundingClientRect(), r = t.getBoundingClientRect();
+    el.style.left = (r.left - host.left + (+el.dataset.dx || 0)) + "px";
+    el.style.top = (r.top - host.top - el.offsetHeight + (+el.dataset.dy || 0)) + "px";
+  });
+</script>
+<script src="callouts.js"></script>
+</body></html>

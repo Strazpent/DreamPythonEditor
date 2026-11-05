@@ -1,0 +1,14 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "Host project that builds and tests the Dream Python Editor plugin (repository only).",
+	"Modules": [
+		{ "Name": "DreamHost", "Type": "Runtime", "LoadingPhase": "Default" }
+	],
+	"Plugins": [
+		{ "Name": "PythonScriptPlugin", "Enabled": true },
+		{ "Name": "DreamPythonEditor", "Enabled": true }
+	],
+	"AdditionalPluginDirectories": [ "../Plugins" ]
+}

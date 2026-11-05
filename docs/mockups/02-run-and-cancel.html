@@ -1,0 +1,449 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x2232">
+<title>Run and cancel</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .win { height: 1036px; position: relative; }
+  .uetb { height: 38px; background: var(--bg3); display: flex; align-items: center; gap: 4px; padding: 0 8px; border-bottom: 1px solid var(--line); }
+  .ueleft { width: 500px; }
+  .viewport { height: 500px; position: relative; overflow: hidden;
+    background: linear-gradient(#36577d 0%, #8fa9c2 52%, #b9c3c8 55%, #6b6253 56%, #3a342c 100%); }
+  .vp-chips { position: absolute; left: 8px; top: 8px; display: flex; gap: 4px; }
+  .vp-chips span { background: rgba(20,20,20,.75); border-radius: 3px; padding: 2px 8px; font-size: 11px; color: var(--text); }
+  .rock { position: absolute; border-radius: 46% 54% 38% 42% / 55% 50% 40% 45%;
+    background: radial-gradient(circle at 34% 28%, #a29d95 0%, #6e6a63 45%, #3c3934 85%); box-shadow: 0 10px 18px rgba(0,0,0,.45); }
+  .cb-path { height: 28px; background: var(--bg2); display: flex; align-items: center; gap: 8px; padding: 0 8px; font-size: 11.5px; color: var(--text-lo); border-bottom: 1px solid var(--line); }
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 10px; }
+  .tile { background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .tile .th { height: 58px; background: radial-gradient(circle at 50% 45%, #8a857e 0%, #55514b 38%, #262626 70%); }
+  .tile .nm { padding: 4px 5px; font-size: 10.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .ty { padding: 0 5px 4px; font-size: 9.5px; color: #4ec9b0; }
+
+  /* the Dream tab behind the Run window: its last painted frame */
+  .tb.off { opacity: .35; }
+  .tb.stop { background: #b71c1c; color: #fff; font-weight: 600; box-shadow: inset 0 0 0 1px #ff6b6b; }
+  .tb.stop .pill { background: #7a1010; color: #ffd0d0; }
+  .etab .rundot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #3d6ea8; border-top-color: #9ccbff; }
+  .lockpill { margin-left: auto; color: #9ccbff; background: #10294a; border-radius: 3px; padding: 0 7px; font-size: 10.5px; }
+  .uestatus { height: 26px; }
+  .outarea { height: 380px; }
+  .cmdbox { background: var(--bg1); border: 1px solid var(--edge); border-radius: 3px; padding: 0 8px; color: var(--text-lo); margin-left: 4px; }
+
+  /* the Run window */
+  .runwin .mw-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 14px 10px; }
+  .rw-state { display: flex; align-items: center; gap: 10px; }
+  .rw-state .big { font: 600 17px var(--ui); color: #fff; white-space: nowrap; }
+  .rw-state .big .sep { color: var(--text-lo); font-weight: 400; }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #2f5d93; border-top-color: #9ccbff; flex: none; }
+  .spin.red { border-color: #6b2a2a; border-top-color: #ff9a9a; }
+  .spin.sm { width: 11px; height: 11px; border-color: #7fb2ef; border-top-color: #fff; }
+  .stopbig { background: #c62828; color: #fff; font-weight: 700; padding: 5px 14px; border-radius: 3px; display: flex; gap: 6px; align-items: center;
+             box-shadow: inset 0 0 0 1px #ff7b7b; white-space: nowrap; }
+  .stopdis { background: #4a2020; color: #d9a0a0; padding: 5px 14px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+  .rw-hint { color: var(--text-lo); font-size: 11.5px; white-space: nowrap; }
+  .rw-line { margin-top: 7px; font-size: 12px; color: var(--text); white-space: nowrap; }
+  .rw-line .lab { color: var(--text-lo); margin-right: 6px; }
+  .rw-line .sep { color: var(--text-lo); }
+  .rw-line code { font-family: var(--mono); color: var(--text-hi); font-size: 12px; }
+  .rw-line .loc { color: var(--info); font-family: var(--mono); }
+  .rw-meters { margin-top: 9px; margin-right: 34px; display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); gap: 36px; }
+  .rw-meters .meter { height: 10px; }
+  .rw-prow { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; white-space: nowrap; }
+  .rw-prow b { color: var(--text-hi); font-family: var(--mono); font-weight: 600; }
+  .rw-prow .msg { font-family: var(--mono); color: var(--text); }
+  .rw-live { margin-top: 9px; flex: 1; min-height: 0; position: relative; overflow: hidden; background: #0e0e0e; border: 1px solid #2a2a2a; border-radius: 3px; }
+  .rw-live .out { position: absolute; inset: 0; background: transparent; font: 11.5px/17px var(--mono); padding: 4px 0; }
+  .rw-live .cap { font: 10.5px/16px var(--ui); color: var(--text-lo); }
+  .rw-live .thumb { position: absolute; right: 3px; top: 5px; width: 6px; height: 16px; border-radius: 3px; background: #4a4a4a; }
+  .newchip { position: absolute; right: 16px; bottom: 8px; font: 600 11px/20px var(--ui); color: #fff; background: var(--accent); border-radius: 10px; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,.6); white-space: nowrap; }
+  .rw-undo .lab { color: var(--text); }
+  .rw-undo .val { color: var(--text-lo); font-size: 11.5px; }
+  .rw-undo .val b { color: var(--text-hi); }
+  .runwin .mw-foot { font-size: 11.5px; color: var(--text); }
+  .runwin .mw-foot .lo { color: var(--text-lo); }
+
+  /* secondary panels */
+  .strip-title { font: 600 15px var(--ui); color: var(--text-hi); margin: 22px 0 3px; }
+  .strip-sub { color: var(--text-lo); font-size: 12.5px; margin-bottom: 14px; }
+  .cards { display: grid; gap: 16px; align-items: stretch; }
+  .cards.r1 { grid-template-columns: 772px 1fr 1fr; }
+  .cards.r2 { grid-template-columns: 948px 1fr; margin-top: 16px; }
+  .card { background: var(--bg1); border: 1px solid var(--edge); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .card-cap { background: var(--bg3); padding: 6px 10px 6px 30px; font-size: 11.5px; color: var(--text-lo); display: flex; gap: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .card-cap b { color: var(--text-hi); font-weight: 600; }
+  .card-cap .when { margin-left: auto; font-family: var(--mono); color: var(--text); }
+  .card-body { padding: 12px; background: #101010; flex: 1; }
+  .modalwin.inline { position: relative; z-index: auto; box-shadow: 0 6px 24px rgba(0,0,0,.7); }
+  .modalwin.inline .mw-title { height: 26px; font-size: 11.5px; }
+  .modalwin.inline .mw-body { padding: 9px 11px; font-size: 12px; }
+  .stopping .rw-state .big { color: #ffb4b4; font-size: 15px; }
+  .duo { display: grid; grid-template-columns: 270px minmax(0,1fr); gap: 12px; }
+  .card .status span { white-space: nowrap; }
+  .card .out { padding: 4px 0; border: 1px solid #222; border-radius: 3px; }
+  .out .hdr .act { color: var(--info); text-decoration: underline; }
+  .out .cancelsum { font: 12px/20px var(--ui); color: #f0d9a8; background: #2a2210; border-left: 3px solid #c9952a; margin: 3px 0; }
+  .out .cancelsum b { color: #ffd27a; }
+  .out .nat { font: 12px/18px var(--ui); color: #f0d9a8; white-space: normal; }
+  .note { margin-top: 8px; font-size: 11.5px; color: var(--text-lo); line-height: 1.45; }
+  .note code { font-family: var(--mono); color: var(--text); }
+  .cleanup { margin-top: 8px; padding: 7px 9px; background: #2a1414; border: 1px solid #5a2a2a; border-radius: 3px; font-size: 12px; line-height: 1.45; }
+  .cleanup code { font-family: var(--mono); color: var(--text-hi); }
+  .cleanup .btn { display: inline-block; margin-top: 6px; padding: 3px 12px; font-size: 11.5px; background: #8b2020; }
+
+  .coop { display: grid; grid-template-columns: 520px 1fr; flex: 1; }
+  .coop .code { font: 12px/18px var(--mono); }
+  .coop .gutter div, .coop .lines div { height: 18px; }
+  .coop .gutter { min-width: 40px; }
+  .coop .lines .step { background: rgba(79,195,247,.10); box-shadow: inset 3px 0 0 var(--info); }
+  .minivp { position: relative; flex: 1; overflow: hidden; min-height: 196px;
+    background: linear-gradient(#36577d 0%, #8fa9c2 48%, #b9c3c8 51%, #6b6253 52%, #3a342c 100%); }
+  .selrock { outline: 2px solid #ff9f1c; outline-offset: 2px; }
+  .vpchip { position: absolute; background: rgba(20,20,20,.8); border-radius: 3px; padding: 2px 8px; font-size: 11px; color: var(--text); white-space: nowrap; }
+
+  .dock { position: relative; flex: 1; display: flex; flex-direction: column; background: var(--bg2); }
+  .runbanner { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #10294a; border-bottom: 1px solid #2f66a4; color: #dcecff; font-size: 12px; white-space: nowrap; }
+  .runbanner .stopbig { padding: 2px 10px; font-size: 11.5px; }
+  .dock .code { font: 11.5px/17px var(--mono); }
+  .dock .gutter div, .dock .lines div { height: 17px; }
+  .dock .gutter { min-width: 46px; }
+  .dock .out div { white-space: pre; }
+  .hatch { position: absolute; background: repeating-linear-gradient(135deg, rgba(0,0,0,.5) 0 10px, rgba(0,0,0,.6) 10px 20px); }
+  .prevtag { font: 600 10px var(--ui); letter-spacing: .4px; text-transform: uppercase; color: #bfe0ff; background: #0a3a6b; border-radius: 3px; padding: 0 5px; }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — a long run in the Run window: live output over the output area, progress and a Stop that works</div>
+<div class="subtitle-strip">Run #22, the whole batch_reimport.py buffer, 41 s in. The Run window is the default presentation (RT-03). It opens on the first pump, about 300 ms into the run, exactly over the Dream output area, which is on top by default (PO-01, PO-03).</div>
+
+<div class="win" id="mainWin">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">Quarry — Unreal Editor 5.8</span>
+  </div>
+  <div class="uetb">
+    <div class="tb">💾</div><div class="tb">Selection Mode ▾</div><div class="tb-sep"></div>
+    <div class="tb">⊕ Add ▾</div><div class="tb">🎬 ▾</div><div class="tb-sep"></div>
+    <div class="tb" style="color:#7ee787">▶</div><div class="tb">⏭</div><div class="tb">⋮</div><div class="tb">Platforms ▾</div>
+    <div class="spacer"></div><div class="tb">⚙ Settings ▾</div>
+  </div>
+
+  <div class="row grow">
+    <!-- left: the rest of Unreal -->
+    <div class="col ueleft" style="position:relative">
+      <div class="docktabs"><div class="docktab active">🎬 Lvl_Quarry<span class="x">×</span></div></div>
+      <div class="viewport" id="vp">
+        <div class="vp-chips"><span>☰</span><span>Perspective</span><span>Lit</span><span>Show</span></div>
+        <div class="rock" style="left:40px; top:240px; width:150px; height:96px"></div>
+        <div class="rock" style="left:210px; top:272px; width:90px; height:58px"></div>
+        <div class="rock" style="left:300px; top:140px; width:230px; height:210px; border-radius: 40% 60% 20% 30% / 70% 60% 30% 25%"></div>
+        <div class="rock" style="left:150px; top:330px; width:60px; height:36px"></div>
+        <div class="rock" style="left:0px; top:320px; width:70px; height:60px"></div>
+      </div>
+      <div class="panel grow">
+        <div class="panel-head">Content Browser</div>
+        <div class="cb-path">📁 /Game › Environment › Rocks › <span style="color:var(--text)">Granite</span><span class="spacer"></span>1,204 items</div>
+        <div class="tiles">
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Boulder_18</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Chunk_07</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Slab_03</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Pebbles_12</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Cliff_Hero_01</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Cliff_Hero_02</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Ledge_04</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Rubble_09</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Shard_21</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Spire_02</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Spire_03</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Step_11</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Tor_01</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Wall_06</div><div class="ty">Static Mesh</div></div>
+          <div class="tile"><div class="th"></div><div class="nm">SM_Granite_Wedge_14</div><div class="ty">Static Mesh</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- right: the Dream tab, as last painted before the run started -->
+    <div class="col grow">
+      <div class="docktabs">
+        <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+        <div class="docktab">Details<span class="x">×</span></div>
+      </div>
+      <div class="toolbar">
+        <div class="tb primary splitrun" id="startBtn"><span class="sr-main"><span class="spin sm"></span>Starting…</span><span class="sr-caret">▾</span></div>
+        <div class="tb off"><span class="ico">⏵</span>Run Cell</div>
+        <div class="tb off"><span class="ico">⏹</span>Stop <span class="pill">Shift+F5</span></div>
+        <div class="tb-sep"></div>
+        <div class="tb off"><span class="ico">🐞</span>Debug</div>
+        <div class="tb off"><span class="ico">⟳</span>Reload Package</div>
+        <div class="tb-sep"></div>
+        <div class="tb off"><span class="chk on"></span>One undo step per run</div>
+        <div class="spacer"></div>
+        <div class="tb">⚙</div>
+      </div>
+      <div class="panel outarea" id="outArea">
+        <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div></div>
+        <div class="out grow follow">
+          <div class="hdr"><b>▶ Run #21</b> REPL <span class="ts">14:02:58 · 0.01 s · <span style="color:var(--ok)">ok</span></span></div>
+          <div class="echo">len(meshes)</div>
+          <div class="res"># Result: 1204</div>
+          <div class="hdr"><b>▶ Run #22</b> batch_reimport.py · whole buffer <span class="ts">14:03:12 · starting · undo “Dream: batch_reimport.py #22”</span></div>
+        </div>
+        <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="codearea">
+        <div class="etabs">
+          <div class="etab active"><span class="lang">PY</span>batch_reimport.py<span class="rundot"></span></div>
+          <div class="etab"><span class="lang">PY</span>Untitled-1<span class="x">×</span></div>
+          <div class="etab"><span class="lang">PY</span>lod_audit.py<span class="x">×</span></div>
+        </div>
+        <div class="breadcrumb">Content/Python/tools › batch_reimport.py</div>
+        <div class="code grow" id="codeBehind">
+          <div class="gutter">
+            <div>27</div><div>28</div><div>29</div><div>30</div><div>31</div><div>32</div><div>33</div><div>34</div><div>35</div><div class="fold">36</div><div>37</div><div>38</div><div>39</div><div>40</div><div>41</div><div>42</div><div>43</div><div>44</div><div>45</div><div>46</div><div class="cur">47</div>
+          </div>
+          <div class="lines">
+<div><span class="c">import</span> unreal, dream_editor</div>
+<div><span class="c">from</span> studio_tools.paths <span class="c">import</span> source_fbx_for</div>
+<div></div>
+<div>ROOT <span class="o">=</span> <span class="s">"/Game/Environment/Rocks/Granite"</span></div>
+<div>registry <span class="o">=</span> unreal.<span class="t">AssetRegistryHelpers</span>.<span class="f">get_asset_registry</span>()</div>
+<div>meshes <span class="o">=</span> registry.<span class="f">get_assets_by_path</span>(ROOT, <span class="p">recursive</span><span class="o">=</span><span class="k">True</span>)<span class="inlay">list[AssetData] · 1,204 items</span></div>
+<div>tools <span class="o">=</span> unreal.<span class="t">AssetToolsHelpers</span>.<span class="f">get_asset_tools</span>()</div>
+<div></div>
+<div><span class="m"># i counts finished items, so the bar reads 0 … len(meshes)</span></div>
+<div><span class="c">for</span> i, data <span class="c">in</span> <span class="f">enumerate</span>(meshes):</div>
+<div>    dream_editor.<span class="f">progress</span>(i, <span class="f">len</span>(meshes), <span class="t">str</span>(data.asset_name))</div>
+<div>    task <span class="o">=</span> unreal.<span class="t">AssetImportTask</span>()</div>
+<div>    task.filename <span class="o">=</span> <span class="f">source_fbx_for</span>(<span class="t">str</span>(data.package_name))</div>
+<div>    task.destination_path <span class="o">=</span> <span class="t">str</span>(data.package_path)</div>
+<div>    task.replace_existing <span class="o">=</span> <span class="k">True</span></div>
+<div>    task.automated <span class="o">=</span> <span class="k">True</span></div>
+<div>    tools.<span class="f">import_asset_tasks</span>([task])</div>
+<div>    <span class="f">print</span>(<span class="s">f"reimported </span>{data.asset_name}<span class="s">"</span>)</div>
+<div></div>
+<div>unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">save_directory</span>(ROOT)</div>
+<div class="curline"><span class="f">print</span>(<span class="s">f"saved </span>{ROOT}<span class="s">"</span>)</div>
+          </div>
+        </div>
+      </div>
+      <div class="status">
+        <span class="busy">⟳ Starting · Run #22</span>
+        <span>Session</span>
+        <span>Language server <span class="ok">✓</span></span>
+        <div class="spacer"></div>
+        <span>Ln 47, Col 1</span><span>UTF-8 · LF</span><span>Journaled before run</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="status uestatus">
+    <span>▤ Content Drawer</span><span>Output Log</span><span>Cmd ▾<span class="cmdbox">Enter Console Command</span></span>
+    <div class="spacer"></div>
+    <span class="dream-item" id="ws07"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Starting <span class="sep">·</span> Run #22</span>
+    <span>Derived Data</span><span>⑂ Source Control</span><span>✓ All Saved</span>
+  </div>
+
+  <!-- the editor behind the modal keeps the frame it last painted: undimmed, nothing drawn over it -->
+</div>
+
+<!-- the Run window: modal, exactly over the Dream output area (same position and size, PO-03) -->
+<div class="modalwin runwin" id="runWin" data-cover="#outArea">
+  <div class="mw-title" id="rwTitle"><span class="dream-mark"></span>Dream — Run #22 · batch_reimport.py · whole buffer</div>
+  <div class="mw-body">
+    <div class="rw-state">
+      <span class="spin"></span><span class="big" id="rwState">Running 41 s <span class="sep">·</span> Run #22</span>
+      <span class="spacer"></span>
+      <span class="rw-hint" id="rwHint">Esc or Shift+F5</span><span class="stopbig" id="rwStop">■ Stop</span>
+    </div>
+    <div class="rw-line" id="rwLine"><span class="lab">Location</span>Line 43 <span class="sep">·</span> <code>tools.import_asset_tasks([task])</code> <span class="sep">·</span> <span class="loc">batch_reimport.py</span> <span class="sep">·</span> statement 7 of 12</div>
+    <div class="rw-meters">
+      <div id="rwProg"><div class="meter"><i style="width:25.9%"></i></div>
+        <div class="rw-prow"><span><b>312 / 1,204</b> · 28/s · ETA 32 s</span><span class="msg">SM_Granite_Cliff_Hero_01</span></div></div>
+      <div class="rw-undo" id="rwUndo"><div class="meter"><i style="width:37.5%"></i></div>
+        <div class="rw-prow"><span class="lab">Undo record</span><span class="val"><b>96 MB</b> of 256 MB</span></div></div>
+    </div>
+    <div class="rw-live" id="rwLive">
+      <div class="out">
+        <div class="ec"><span class="eln">33</span><span class="egl">›</span>tools = unreal.AssetToolsHelpers.get_asset_tools()</div>
+        <div class="ec"><span class="eln">36</span><span class="egl">›</span><span id="echoFor">for i, data in enumerate(meshes):</span></div>
+        <div class="ec"><span class="eln">37</span><span class="egl">›</span>    dream_editor.progress(i, len(meshes), str(data.asset_name))</div>
+        <div class="ec"><span class="eln">38</span><span class="egl">›</span>    task = unreal.AssetImportTask()</div>
+        <div class="ec"><span class="eln">39</span><span class="egl">›</span>    task.filename = source_fbx_for(str(data.package_name))</div>
+        <div class="ec"><span class="eln">40</span><span class="egl">›</span>    task.destination_path = str(data.package_path)</div>
+        <div class="ec"><span class="eln">41</span><span class="egl">›</span>    task.replace_existing = True</div>
+        <div class="ec"><span class="eln"></span><span class="egl">›</span><span class="foldchip" id="foldChip">… 3 more lines</span></div>
+        <div>LogInterchangeEngine: Display: Import \\studio\src\rocks\SM_Granite_Boulder_18.fbx</div>
+        <div>reimported SM_Granite_Boulder_18</div>
+        <div>LogInterchangeEngine: Display: Import \\studio\src\rocks\SM_Granite_Chunk_07.fbx</div>
+        <div class="warn">LogFbx: Warning: SM_Granite_Chunk_07: no smoothing groups, built from normals</div>
+        <div>reimported SM_Granite_Chunk_07</div>
+        <div>LogInterchangeEngine: Display: Import \\studio\src\rocks\SM_Granite_Slab_03.fbx</div>
+      </div>
+      <div class="thumb"></div>
+      <span class="newchip" id="newChip">↓ 1,236 new lines</span>
+    </div>
+  </div>
+  <div class="mw-foot" id="rwFoot"><span>ⓘ Viewports resume when the run ends.</span><span class="lo">Clicks and keys outside this window are ignored until then.</span></div>
+</div>
+
+<!-- secondary panels -->
+<div class="strip-title">After Stop, and the other run states</div>
+<div class="strip-sub">(a) Stop while Python is running, (b) Stop during a long native call, (c) a long cleanup, (d) task mode, (e) the docked presentation.</div>
+<div class="cards r1">
+  <div class="card" id="cardA">
+    <div class="card-cap"><b>(a) Stopping…, then cancelled</b> · Stop pressed at 45.6 s<span class="when">46.2 s</span></div>
+    <div class="card-body duo">
+      <div class="modalwin inline stopping">
+        <div class="mw-title"><span class="dream-mark sm"></span>Dream — Run #22</div>
+        <div class="mw-body">
+          <div class="rw-state"><span class="spin red"></span><span class="big">Stopping…</span></div>
+          <div class="note">Leaving <code>with</code> and <code>finally</code> blocks. The state stays Stopping… until control returns.</div>
+          <div style="margin-top:8px"><div class="meter grey"><i style="width:28%"></i></div></div>
+          <div style="margin-top:8px"><span class="stopdis">■ Stopping…</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="out" id="outA">
+          <div class="hdr"><b>▶ Run #22</b> batch_reimport.py <span class="ts">46.2 s · <span style="color:var(--warn)">cancelled</span></span><span class="act" id="undoA">Undo this run</span></div>
+          <div class="txnote">imports and reimports in this run are not undoable</div>
+          <div class="info">reimported SM_Granite_Cliff_Hero_01</div>
+          <div class="info">LogStaticMesh: Display: Building Nanite data …</div>
+          <div class="cancelsum" id="sumA">■ <b>Run #22 · cancelled at <span class="link">batch_reimport.py:43</span> · 0.6 s after Stop</b></div>
+          <div class="info" style="color:var(--text-lo)">341 / 1,204 done · transaction kept</div>
+          <div class="info" style="color:var(--text-lo)">undo “Dream: batch_reimport.py #22”</div>
+        </div>
+        <div class="note">No rollback: the transaction is kept; Undo this run reverts only the recorded edits, not the 341 reimports. The REPL and editing come back at once.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="cardB">
+    <div class="card-cap"><b>(b) Stop during a native call</b><span class="when">Run #24</span></div>
+    <div class="card-body">
+      <div class="out">
+        <div class="hdr"><b>▶ Run #24</b> bake_proxies.py <span class="ts">31.9 s · <span style="color:var(--warn)">cancelled</span></span></div>
+        <div class="nat" id="natB">⏳ The last native call took 12.4 s; Stop took effect when it returned.</div>
+        <div class="info" style="color:var(--text-lo)">import_asset_tasks · bake_proxies.py:18</div>
+      </div>
+      <div class="note">Nothing can paint during a native call that does not pump Slate, so there is no live “waiting” state. The Run window and the output say it afterwards.</div>
+    </div>
+  </div>
+  <div class="card" id="cardC">
+    <div class="card-cap"><b>(c) A long cleanup</b><span class="when">Run #27</span></div>
+    <div class="card-body">
+      <div class="modalwin inline stopping">
+        <div class="mw-title"><span class="dream-mark sm"></span>Dream — Run #27</div>
+        <div class="mw-body">
+          <div class="rw-state"><span class="spin red"></span><span class="big">Stopping… 11 s</span></div>
+          <div class="cleanup" id="cleanC">A <code>finally</code> block is still running at <code>export_shots.py:58</code>.<br><span class="btn">Interrupt cleanup</span> <span style="color:var(--text-lo);font-size:11px">delivers Stop once more</span></div>
+        </div>
+      </div>
+      <div class="note">Offered after 10 s of cleanup (a setting). Until then Dream does not re-deliver while your handler runs.</div>
+    </div>
+  </div>
+</div>
+
+<div class="cards r2">
+  <div class="card" id="cardD">
+    <div class="card-cap"><b>(d) Task mode</b> · <code style="font-family:var(--mono);color:var(--text)">@dream_editor.task</code> runs one step at a time, so the editor stays interactive<span class="when">Run #31</span></div>
+    <div class="coop">
+      <div class="code" style="border-right:1px solid var(--line)">
+        <div class="gutter"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div></div>
+        <div class="lines">
+<div><span class="c">import</span> unreal, dream_editor</div>
+<div></div>
+<div><span class="d">@dream_editor.task</span></div>
+<div><span class="k">def</span> <span class="f">tag_props</span>(<span class="p">paths</span>):</div>
+<div>    <span class="c">for</span> i, path <span class="c">in</span> <span class="f">enumerate</span>(paths):</div>
+<div>        dream_editor.<span class="f">progress</span>(i, <span class="f">len</span>(paths), path)</div>
+<div>        mesh <span class="o">=</span> unreal.<span class="f">load_asset</span>(path)</div>
+<div>        mesh.<span class="f">set_editor_property</span>(<span class="s">"lod_group"</span>, <span class="s">"LargeProp"</span>)</div>
+<div class="step">        <span class="c">yield</span>  <span class="m"># one step = one undo step</span></div>
+<div>paths <span class="o">=</span> unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">list_assets</span>(<span class="s">"/Game/Props"</span>)</div>
+<div><span class="f">tag_props</span>(paths)  <span class="m"># returns at once; steps run between frames</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="minivp">
+          <div class="vpchip" style="left:8px; top:8px">Perspective · Lit</div>
+          <div class="rock" style="left:30px; top:110px; width:110px; height:64px"></div>
+          <div class="rock selrock" style="left:190px; top:62px; width:130px; height:104px"></div>
+          <div class="rock" style="left:370px; top:96px; width:110px; height:70px; border-radius: 40% 60% 20% 30% / 70% 60% 30% 25%"></div>
+          <svg style="position:absolute; left:232px; top:34px" width="110" height="100" viewBox="0 0 120 110">
+            <line x1="20" y1="80" x2="100" y2="80" stroke="#e53935" stroke-width="3"/><polygon points="100,74 112,80 100,86" fill="#e53935"/>
+            <line x1="20" y1="80" x2="20" y2="10" stroke="#1e88e5" stroke-width="3"/><polygon points="14,12 20,0 26,12" fill="#1e88e5"/>
+            <line x1="20" y1="80" x2="62" y2="48" stroke="#43a047" stroke-width="3"/><polygon points="58,42 70,42 64,53" fill="#43a047"/>
+            <rect x="16" y="76" width="8" height="8" fill="#ffeb3b"/>
+          </svg>
+          <div class="vpchip" style="left:8px; bottom:8px; color:#b4f0b8">Viewport live · dragging a rock while the task runs</div>
+        </div>
+        <div class="status uestatus">
+          <span>▤ Content Drawer</span>
+          <div class="spacer"></div>
+          <span class="dream-item task" id="taskItem"><span class="dream-mark sm"></span>Dream <span class="sep">·</span> Task running <span class="sep">·</span> 40 / 300 <span class="stopchip">■ Stop</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="cardE">
+    <div class="card-cap"><b>(e) Live (docked) — Preview</b> · the banner variant, an opt-in profile<span class="when">Run #22</span></div>
+    <div class="dock">
+      <div class="runbanner" id="bannerE"><span class="spin" style="width:12px;height:12px"></span><b>Running 41 s · Run #22</b> · line 43 · statement 7 of 12 · 312 / 1,204 <span class="spacer"></span><span style="color:#9ccbff">Esc · Shift+F5</span><span class="stopbig">■ Stop</span></div>
+      <div class="out follow" style="height:66px">
+        <div>reimported SM_Granite_Pebbles_12</div>
+        <div>LogStaticMesh: Display: Building Nanite data …</div>
+        <div class="warn">LogFbx: Warning: no smoothing groups</div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="code" style="height:112px">
+        <div class="gutter runlane"><div>41</div><div>42</div><div class="runarrow" id="execArrow">43</div><div>44</div><div>45</div><div>46</div></div>
+        <div class="lines">
+<div>    task.replace_existing <span class="o">=</span> <span class="k">True</span></div>
+<div>    task.automated <span class="o">=</span> <span class="k">True</span></div>
+<div>    tools.<span class="f">import_asset_tasks</span>([task])</div>
+<div>    <span class="f">print</span>(<span class="s">f"reimported </span>{data.asset_name}<span class="s">"</span>)</div>
+<div></div>
+<div>unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">save_directory</span>(ROOT)</div>
+        </div>
+      </div>
+      <div class="note" style="margin:0; padding:6px 10px; background:var(--bg3); border-top:1px solid var(--line)">The tab keeps painting: output streams in the output area and the gutter arrow marks the line of the last pump; the rest of the editor is blocked by an input pre-processor. <span class="prevtag">Preview</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#rwTitle" data-at="r" data-dx="-74"><div class="num">1</div></div>
+<div class="callout" data-for="#rwLine" data-at="r" data-dx="-14"><div class="num">2</div></div>
+<div class="callout" data-for="#rwProg" data-at="r" data-dx="18"><div class="num">3</div></div>
+<div class="callout" data-for="#rwLive" data-at="tr" data-dx="-30" data-dy="16"><div class="num">4</div></div>
+<div class="callout" data-for="#rwUndo" data-at="r" data-dx="18"><div class="num">5</div></div>
+<div class="callout" data-for="#rwStop" data-at="tr" data-dx="4" data-dy="-4"><div class="num">6</div></div>
+<div class="callout" data-for="#rwFoot" data-at="r" data-dx="-16"><div class="num">7</div></div>
+<div class="callout" data-for="#startBtn" data-at="l" data-dx="-14"><div class="num">8</div></div>
+<div class="callout" data-for="#ws07" data-at="l" data-dx="-16"><div class="num">9</div></div>
+<div class="callout" data-for="#cardA" data-at="tl" data-dx="15" data-dy="13"><div class="num">10</div></div>
+<div class="callout" data-for="#cardB" data-at="tl" data-dx="15" data-dy="13"><div class="num">11</div></div>
+<div class="callout" data-for="#cardC" data-at="tl" data-dx="15" data-dy="13"><div class="num">12</div></div>
+<div class="callout" data-for="#cardD" data-at="tl" data-dx="15" data-dy="13"><div class="num">13</div></div>
+<div class="callout" data-for="#cardE" data-at="tl" data-dx="15" data-dy="13"><div class="num">14</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Run window.</b> The default presentation. A modal window that opens on the first pump (about 300 ms in) exactly over the Dream output area, with its position and size, so during the run the output area itself shows the run. Short runs end before it appears; their echo and output appear together on the next painted frame. It is one of only two modal Dream windows; the other is Paused.</span></div>
+  <div><span class="num">2</span><span><b>State and location.</b> <code>Running 41 s · Run #22</code>, then the line Python was on at the last pump with its source text and file, and the statement that is running, 7 of 12 (statement mode, RUN-27). During a native call nothing paints, so this is the last line seen, not a live trace.</span></div>
+  <div><span class="num">3</span><span><b>Progress.</b> <code>dream_editor.progress(i, n, msg)</code>, where <code>i</code> counts finished items. The window shows <code>i / n</code>, a rate and an ETA once it has 3 samples, and the message. <code>n=None</code> gives an indeterminate bar.</span></div>
+  <div><span class="num">4</span><span><b>Live run view.</b> The run's echo and output, drained on every pump, so a printed line shows at the first pump after it (about 110 ms at 10 Hz for a script that prints between sleeps); lines printed before the window opens appear when it opens. Each statement's echo comes just before its output; the loop's echo folds after 6 lines. The wheel and scrollbar scroll it, here back to the loop's start; <code>↓ 1,236 new lines</code> returns to follow mode. When the run ends the window closes and the output area under it shows the same block: still following at the bottom if the view was following, or, as here after the wheel, with the line you were reading at the same place on screen. The Output Log gets the output in batches through <code>UE_LOG</code>, without the echo.</span></div>
+  <div><span class="num">5</span><span><b>Undo record size.</b> Read on every pump. At 50% of the undo buffer the window warns. At 100% Dream ends the transaction and labels the run <b>partly undoable</b>; Undo Last Run warns before reverting a partial record.</span></div>
+  <div><span class="num">6</span><span><b>Stop.</b> Esc stops the run when this window (or no modal) is active and no menu is open; inside a script's own dialog Esc means Cancel. Shift+F5 and the Stop button always stop. A pure-Python loop ends within 250 ms.</span></div>
+  <div><span class="num">7</span><span><b>Viewports resume when the run ends.</b> The engine is not ticked during a supervised run, so viewports do not render. The platform blocks input to every other window.</span></div>
+  <div><span class="num">8</span><span><b>The editor behind.</b> It keeps the frame it last painted before the run started, undimmed, with <code>Starting…</code> on the Run button and the code area as it was, so the running line shows in the Location row, not in the code view. While the Run window is open only the modal, tooltips and notifications are drawn: nothing outside the Run window is drawn or clickable until the run ends, as its footer says.</span></div>
+  <div><span class="num">9</span><span><b>Dream in the Unreal status bar.</b> It is painted only when the editor paints, so during a Run-window run it keeps its last painted text (<code>Dream · Starting · Run #22</code>) and cannot be clicked; the Run window is what shows. The Running pattern is live only in task mode and in Live (docked) Preview.</span></div>
+  <div><span class="num">10</span><span><b>Stopping…, then cancelled.</b> <code>ScriptCancelled</code> (a <code>KeyboardInterrupt</code> subclass) is raised at the next bytecode boundary; <code>with</code> and <code>finally</code> still run. The block ends with where and how long after Stop it took effect. The outcome is <code>cancelled</code>.</span></div>
+  <div><span class="num">11</span><span><b>The honest native-call note.</b> A native call that does not pump Slate freezes the UI and delays Stop. Afterwards the Run window and the output say how long the last native call took.</span></div>
+  <div><span class="num">12</span><span><b>Interrupt cleanup.</b> While your handler for the Stop is running, Dream does not re-deliver. After 10 s of cleanup it offers Interrupt cleanup, which delivers Stop once more.</span></div>
+  <div><span class="num">13</span><span><b>Task mode.</b> <code>Task running</code> keeps the editor interactive and viewports render. Each step is its own undo step, <code>Dream: task #31</code>. Stop is on this item, on the tab banner, and Shift+F5 in Dream. A step longer than 1 s is supervised like a run.</span></div>
+  <div><span class="num">14</span><span><b>Live (docked) — Preview.</b> An opt-in profile: the tab paints a run banner and streams output in the output area, and an arrow in the code gutter marks the line of the last pump, while an input pre-processor blocks the rest of the editor. It becomes the default only after the extended G2 suite is green for 4 consecutive weeks.</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+</body></html>

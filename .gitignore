@@ -1,0 +1,23 @@
+# Unreal build output and caches
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+*.pdb
+*.sln
+*.VC.db
+*.opensdf
+*.sdf
+*.suo
+.vs/
+.idea/
+.vscode/
+
+# Tier-1 build output
+Plugins/DreamPythonEditor/Tests/DreamCore/out/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo

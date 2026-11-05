@@ -1,0 +1,445 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x1282">
+<title>Traceback to source</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  /* three stages joined by labelled arrows */
+  .canvas { width: 1600px; }  /* fixed, so script-time layout equals screenshot layout */
+  .flow { display: flex; gap: 60px; align-items: stretch; width: 1552px; height: 902px; }
+  .stage { display: flex; flex-direction: column; min-width: 0; flex: none; }
+  #stA { width: 492px; } #stB { width: 500px; } #stC { width: 440px; }
+  .stage > .win.fill { flex: 1; min-height: 0; }
+  .step { height: 28px; flex: none; display: flex; align-items: center; gap: 8px; color: var(--text-hi); font: 600 13px var(--ui); white-space: nowrap; }
+  .step .letter { width: 20px; height: 20px; border-radius: 4px; background: var(--accent); color: #fff; font: 700 11px/20px var(--ui); text-align: center; }
+  .step .dim { color: var(--text-lo); font-weight: 400; }
+  .step.sub { margin-top: 14px; font-size: 12px; }
+  .step.sub .letter { background: #3a3a3a; color: var(--text-hi); }
+  .dim { color: var(--text-lo); }
+
+  /* denser code view for the narrow panels */
+  .code { font: 12px/18px var(--mono); }
+  .code .gutter { min-width: 44px; padding: 6px 0; }
+  .code .gutter.runlane { min-width: 50px; }
+  .code .gutter div, .code .lines div { height: 18px; }
+  .code .lines div { padding-left: 8px; }
+  .cursor { height: 15px; vertical-align: -3px; }
+  .lines .errline { background: rgba(255,82,82,.16); }
+  .gutter .ge::before, .gutter .gw::before, .gutter .bulb::before { position: absolute; left: 5px; top: 0; font: 700 11px/18px "Segoe UI Symbol", var(--ui); }
+  .gutter .ge::before { content: "\2716"; color: var(--err); }
+  .gutter .gw::before { content: "\26A0"; color: var(--warn); }
+  .gutter .bulb::before { content: "\1F4A1"; font-family: "Segoe UI Emoji"; font-size: 11px; left: 3px; }
+  .rt { text-decoration: underline solid var(--err) 2px; text-underline-offset: 3px; }
+  .anno { font: 11px/16px var(--ui); margin-left: 14px; padding: 0 7px; border-radius: 3px; display: inline-block; vertical-align: 1px; }
+  .anno.err { background: #4d1a1c; color: #ffc2c2; box-shadow: inset 0 0 0 1px #7a2a2e; }
+  .stripe { position: absolute; right: 0; top: 0; bottom: 0; width: 9px; background: #191919; border-left: 1px solid #222; }
+  .stripe i { position: absolute; left: 1px; right: 1px; height: 3px; border-radius: 1px; }
+  .stripe i.e { background: var(--err); } .stripe i.w { background: var(--warn); } .stripe .vis { position: absolute; left: 0; right: 0; background: rgba(255,255,255,.06); }
+  .insp { position: absolute; right: 16px; top: 6px; font: 11px/18px var(--ui); background: #222; border: 1px solid #333; border-radius: 3px; padding: 0 6px; display: flex; gap: 8px; color: var(--text-lo); }
+  .insp .e { color: var(--err); } .insp .w { color: var(--warn); }
+
+  /* bar that says where this tab was opened from */
+  .origin { height: 24px; flex: none; background: #1d1416; border-bottom: 1px solid #3a1d20; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 11.5px; color: #e6c4c4; white-space: nowrap; }
+  .origin b { color: #ffd0d0; font-weight: 600; }
+  .origin .lk { color: var(--info); text-decoration: underline; }
+  .breadcrumb .fn { color: var(--text); }
+  .breadcrumb .fn::before { content: "\0192\00a0"; color: var(--fn); }
+
+  /* output */
+  .out { font: 12px/18px var(--mono); }
+  .out .hdr { white-space: nowrap; align-items: center; }
+  .out .hdr.ok-h b { color: #a8c7ee; }
+  .out .hdr.bad { background: #2a1517; border-top-color: #4d2024; color: #d9a3a3; box-shadow: inset 3px 0 0 var(--err); }
+  .out .hdr.bad b { color: #ffc2c2; }
+  .out .hdr.sub { border-top: 0; }
+  .out .hdr .badge { font-size: 10px; line-height: 15px; }
+  .out .eb { box-shadow: inset 3px 0 0 var(--err); background: rgba(255,82,82,.045); }
+  .out .src { color: #e59a9a; }
+  .out .note { color: var(--text-hi); }
+  .out .link.hover { background: rgba(79,195,247,.16); border-radius: 2px; }
+  .ptabs { display: flex; align-items: center; gap: 3px; font: 400 10.5px var(--ui); text-transform: none; letter-spacing: 0; }
+  .ptabs .ty { padding: 0 6px; height: 17px; line-height: 17px; border-radius: 9px; background: var(--bg5); color: var(--text); display: flex; gap: 4px; align-items: center; }
+  .ptabs .ty i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .ptabs .ty.off { background: transparent; color: #666; text-decoration: line-through; box-shadow: inset 0 0 0 1px #333; }
+  .panel-head .tabs { white-space: nowrap; }
+  .panel-head .tabs span .badge { margin: 0 0 0 3px; }
+  .phead-note { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-lo); }
+
+  /* problems */
+  .probs { font: 12px/22px var(--ui); padding: 3px 0; }
+  .probs .grp { padding: 0 8px; color: var(--text-hi); display: flex; gap: 6px; align-items: center; }
+  .probs .grp .dim { font-size: 11px; }
+  .probs .r { display: grid; grid-template-columns: 14px 1fr auto 44px; gap: 8px; padding: 0 8px 0 22px; align-items: center; white-space: nowrap; }
+  .probs.flat .r { padding-left: 10px; }
+  .probs .r.sel { background: var(--accent-lo); color: var(--text-hi); }
+  .probs .r.wrap { align-items: start; }
+  .probs .r.wrap .msg { white-space: normal; line-height: 17px; padding: 2px 0 3px; }
+  .probs .r.next { box-shadow: inset 2px 0 0 #2f7fd8; }
+  .probs .ic { font: 700 11px "Segoe UI Symbol", var(--ui); text-align: center; }
+  .probs .ic.e { color: var(--err); } .probs .ic.w { color: var(--warn); }
+  .probs .msg { overflow: hidden; text-overflow: ellipsis; }
+  .probs .msg code { font: 11.5px var(--mono); color: var(--text-hi); }
+  .probs .from { color: var(--text-lo); font-size: 11px; }
+  .probs .loc { color: var(--text-lo); font: 11px var(--mono); text-align: right; }
+  .probs .r.sel .from, .probs .r.sel .loc { color: #bcd6f5; }
+  .f4chip { font: 400 11px var(--ui); text-transform: none; letter-spacing: 0; color: #cfe3fb; background: #10243b; border: 1px solid #2f5f99; border-radius: 3px; padding: 0 7px; height: 18px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .kc { display: inline-block; border: 1px solid #6f8fb8; border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; font: 700 10px/13px var(--mono); color: #fff; background: #1b3556; }
+
+  /* popups */
+  .popup .doc { font-size: 11.5px; }
+  .tip .doc b { color: var(--text-hi); }
+  .qf { font-size: 12px; }
+  .qf .qh { font: 11.5px/22px var(--ui); color: #ffe08a; padding: 0 8px; border-bottom: 1px solid #3a3a3a; display: flex; gap: 8px; white-space: nowrap; }
+  .qf .qh .spacer { flex: 1; }
+  .qf .it .em { font-family: "Segoe UI Emoji"; font-size: 11px; width: 16px; text-align: center; }
+
+  /* labelled arrows between stages */
+  #wires { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 26; overflow: visible; }
+  .act { position: absolute; z-index: 27; width: 54px; transform: translate(-50%, -50%); background: #10243b; border: 1px solid #2f7fd8;
+         border-radius: 6px; padding: 6px 2px; color: #dbeafe; font: 600 11px/1.3 var(--ui); text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,.6); }
+  .act .em { font: 15px/18px "Segoe UI Emoji"; display: block; margin-bottom: 2px; }
+  .act .kc { font-size: 12px; line-height: 16px; padding: 0 6px; margin-bottom: 4px; }
+  .act .sm { display: block; font-weight: 400; color: #a9c6ea; font-size: 10.5px; }
+  .legend code { font: 12px var(--mono); color: var(--text-hi); }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — error flow: from a traceback to the failing line</div>
+<div class="subtitle-strip">A failed run becomes a red block in Output, every frame links to its line, F4 walks the frames, the error stays on the source line and in Problems, F8 walks the problems, and a syntax error stops the run before anything executes.</div>
+
+<div class="flow" id="flow">
+
+<!-- ============ A: output view after the failed run ============ -->
+<div class="stage" id="stA">
+  <div class="step"><span class="letter">A</span>Run #31 fails <span class="dim">· the Output view shows a red run block</span></div>
+  <div class="win fill" id="winA">
+    <div class="win-title"><span class="ue-logo"></span>
+      <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Help</span></div>
+      <div class="spacer"></div><span class="dim">CitySample — Unreal Editor 5.8</span>
+    </div>
+    <div class="docktabs">
+      <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+      <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    </div>
+    <div class="toolbar">
+      <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+      <div class="tb"><span class="ico">⏹</span><span class="dim">Stop</span></div>
+      <div class="tb"><span class="ico">🐞</span>Debug</div>
+      <div class="tb-sep"></div>
+
+      <div class="spacer"></div><div class="tb">⚙</div>
+    </div>
+    <div class="panel grow">
+      <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems <span class="badge err">1</span></span></div>
+        <div class="spacer"></div>
+        <div class="ptabs" id="typeChips">
+          <span class="ty off"><i style="background:#8d9ab0"></i>Echo</span>
+          <span class="ty"><i style="background:#ddd"></i>Out</span>
+          <span class="ty"><i style="background:var(--info)"></i>Info</span>
+          <span class="ty"><i style="background:var(--warn)"></i>Warn</span>
+          <span class="ty"><i style="background:var(--err)"></i>Error</span>
+        </div>
+      </div>
+      <div class="out grow">
+        <div class="hdr ok-h"><b>▸ Run #29</b><span>batch_rename.py · cell [2]</span><span class="ts">14:18:02 · 0.42 s</span><span class="spacer"></span><span class="badge ok">✓ ok</span></div>
+        <div class="hdr ok-h"><b>▸ Run #30</b><span>Untitled-3 · lines 12–14</span><span class="ts">14:21:40 · 0.02 s</span><span class="spacer"></span><span class="badge ok">✓ ok</span></div>
+        <div class="hdr bad" id="hdr31"><b>▾ Run #31</b><span id="hdr31t">Untitled-3 · lines 12–20</span><span class="spacer"></span><span class="badge err">✖ error · KeyError</span></div>
+        <div class="hdr bad sub"><span>14:22:07 · 0.38 s · undo “Dream: Untitled-3 #31” · <span class="link" style="color:var(--info)">Undo this run</span></span></div>
+        <div class="eb warn">LogPython: Warning: 2 non-mesh assets skipped</div>
+        <div class="eb info">LogPython: SM_Crate_01: LOD0</div>
+        <div class="eb info">LogPython: SM_Crate_01: LOD1</div>
+        <div class="eb err">Traceback (most recent call last):</div>
+        <div class="eb err"><span id="fr1">  File <span class="link">"&lt;dream:Untitled-3#a41f&gt;", line 18</span>, in &lt;module&gt;</span></div>
+        <div class="eb src">    importer.build_lod_chain(mesh, preset="hero")</div>
+        <div class="eb err">  File <span class="link hover" id="tbFile">"studio_tools/importer.py", line 88</span>, in build_lod_chain</div>
+        <div class="eb src">    settings = presets[name]</div>
+        <div class="eb src">               ~~~~~~~^^^^^^</div>
+        <div class="eb err" id="keyErr">KeyError: 'LOD1'</div>
+      </div>
+      <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline</span></div>
+    </div>
+    <div class="splitter-h"></div>
+    <div class="etabs">
+      <div class="etab active"><span class="lang">PY</span>Untitled-3<span class="dot"></span></div>
+      <div class="etab"><span class="lang">PY</span>batch_rename.py<span class="x">×</span></div>
+      <div class="etab" style="color:var(--text-lo)">＋</div>
+    </div>
+    <div class="breadcrumb">Untitled › Untitled-3 <span class="spacer"></span><span>journaled 3 s ago</span></div>
+    <div class="code" style="height:300px; flex:none">
+      <div class="gutter runlane">
+        <div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div class="rk-ok">12</div><div class="rk-ok">13</div><div class="rk-ok">14</div><div class="rk-ok">15</div><div class="rk-ok">16</div><div class="rk-err">17</div><div class="ge cur rk-err">18</div><div class="rk-err">19</div><div>20</div><div>21</div><div>22</div>
+      </div>
+      <div class="lines">
+<div><span class="m"># rebuild hero LODs on the selected props</span></div>
+<div></div>
+<div><span class="c">import</span> unreal</div>
+<div><span class="c">from</span> studio_tools <span class="c">import</span> importer</div>
+<div></div>
+<div class="rantint">picked <span class="o">=</span> unreal.<span class="t">EditorUtilityLibrary</span>.<span class="f">get_selected_assets</span>()</div>
+<div class="rantint">meshes <span class="o">=</span> [a <span class="c">for</span> a <span class="c">in</span> picked</div>
+<div class="rantint">          <span class="c">if</span> <span class="f">isinstance</span>(a, unreal.<span class="t">StaticMesh</span>)]</div>
+<div class="rantint"><span class="c">if</span> skipped <span class="o">:=</span> <span class="f">len</span>(picked) <span class="o">-</span> <span class="f">len</span>(meshes):</div>
+<div class="rantint">    unreal.<span class="f">log_warning</span>(<span class="s">f"</span>{skipped}<span class="s"> non-mesh assets skipped"</span>)</div>
+<div><span class="c">for</span> mesh <span class="c">in</span> meshes:</div>
+<div class="errline">    importer.<span class="f">build_lod_chain</span>(mesh, <span class="p">preset</span><span class="o">=</span><span class="s">"hero"</span>)</div>
+<div>    unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">save_loaded_asset</span>(mesh)</div>
+<div><span class="f">print</span>(<span class="s">f"LODs rebuilt on </span>{<span class="f">len</span>(meshes)}<span class="s"> meshes"</span>)</div>
+<div></div>
+<div><span class="m"># %% check the result</span></div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="ok">● Idle · Session</span>
+      <span class="err">✖ Run #31 error</span>
+      <span class="err">✖ 1</span>
+      <div class="spacer"></div>
+      <span>Ln 20, Col 46</span><span>UTF-8 · LF</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ B: importer.py opened at line 88 ============ -->
+<div class="stage" id="stB">
+  <div class="step"><span class="letter">B</span>Clicked the importer.py frame <span class="dim">· the file opens at line 88</span></div>
+  <div class="win fill" id="winB">
+    <div class="win-title"><span class="ue-logo"></span>
+      <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Help</span></div>
+      <div class="spacer"></div><span class="dim">CitySample — Unreal Editor 5.8</span>
+    </div>
+    <div class="docktabs">
+      <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+      <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    </div>
+    <div class="toolbar">
+      <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+      <div class="tb"><span class="ico">⏹</span><span class="dim">Stop</span></div>
+      <div class="tb"><span class="ico">🐞</span>Debug</div>
+      <div class="tb-sep"></div>
+
+      <div class="spacer"></div><div class="tb">⚙</div>
+    </div>
+    <div class="panel grow">
+      <div class="panel-head"><div class="tabs"><span>Output</span><span>REPL</span><span class="on" id="probTabB">Problems <span class="badge err">1</span> <span class="badge warn">2</span></span></div>
+        <div class="spacer"></div><span class="phead-note">Errors ✓ · Warnings ✓ · All files ▾</span></div>
+      <div class="probs">
+        <div class="grp"><span class="ico-open"></span><span id="grpB">importer.py <span class="dim">Content/Python/studio_tools · 3</span></span></div>
+        <div class="r sel"><span class="ic e">✖</span><span class="msg"><code>KeyError: 'LOD1'</code> in build_lod_chain</span><span class="from">runtime · Run #31</span><span class="loc">Ln 88</span></div>
+        <div class="r wrap" id="probB2"><span class="ic w">⚠</span><span class="msg"><code>lod_group</code> is not a Python attribute of StaticMesh; the assignment raises AttributeError</span><span class="from">SUM102</span><span class="loc">Ln 94</span></div>
+        <div class="r"><span class="ic w">⚠</span><span class="msg"><code>shutil</code> imported but unused</span><span class="from">F401</span><span class="loc">Ln 6</span></div>
+      </div>
+    </div>
+    <div class="splitter-h"></div>
+    <div class="etabs">
+      <div class="etab"><span class="lang">PY</span>Untitled-3<span class="x">×</span></div>
+      <div class="etab active"><span class="lang">PY</span>importer.py<span class="x">×</span></div>
+      <div class="etab" style="color:var(--text-lo)">＋</div>
+    </div>
+    <div class="origin" id="originBar"><span id="originTxt">✖ Opened from <b>Run #31</b> traceback · frame 2 of 2 · <span class="kc">F4</span> <span class="kc">Shift+F4</span> frames · <span class="lk">Back to Output</span></span></div>
+    <div class="breadcrumb" id="crumbB">Content/Python › studio_tools › importer.py › <span class="fn">build_lod_chain</span></div>
+    <div class="code" style="height:516px; flex:none">
+      <div class="gutter">
+        <div>70</div><div>71</div><div>72</div><div>73</div><div>74</div><div>75</div><div>76</div><div>77</div><div>78</div><div>79</div><div>80</div><div>81</div><div>82</div><div>83</div><div>84</div><div>85</div><div>86</div><div>87</div><div class="ge cur">88</div><div>89</div><div>90</div><div>91</div><div>92</div><div>93</div><div>94</div><div>95</div><div>96</div><div>97</div>
+      </div>
+      <div class="lines">
+<div><span class="d">@functools.cache</span></div>
+<div><span class="k">def</span> <span class="f">load_lod_presets</span>(<span class="p">preset</span>):</div>
+<div>    path <span class="o">=</span> os.path.<span class="f">join</span>(PRESET_DIR, <span class="s">f"</span>{preset}<span class="s">.json"</span>)</div>
+<div>    <span class="c">with</span> <span class="f">open</span>(path, <span class="p">encoding</span><span class="o">=</span><span class="s">"utf-8"</span>) <span class="c">as</span> fh:</div>
+<div>        <span class="c">return</span> json.<span class="f">load</span>(fh)[<span class="s">"lods"</span>]</div>
+<div></div>
+<div></div>
+<div><span class="k">def</span> <span class="f">build_lod_chain</span>(<span class="p">mesh</span>, <span class="p">preset</span><span class="o">=</span><span class="s">"default"</span>):</div>
+<div>    <span class="s">"""Apply a studio LOD preset; return the LOD count."""</span></div>
+<div>    presets <span class="o">=</span> <span class="f">load_lod_presets</span>(preset)</div>
+<div>    sms <span class="o">=</span> unreal.<span class="f">get_editor_subsystem</span>(</div>
+<div>        unreal.<span class="t">StaticMeshEditorSubsystem</span>)</div>
+<div>    options <span class="o">=</span> unreal.<span class="t">EditorScriptingMeshReductionOptions</span>()</div>
+<div>    reduction <span class="o">=</span> []</div>
+<div></div>
+<div>    <span class="c">for</span> index <span class="c">in</span> <span class="f">range</span>(MAX_LODS):</div>
+<div>        name <span class="o">=</span> <span class="s">f"LOD</span>{index}<span class="s">"</span></div>
+<div>        unreal.<span class="f">log</span>(<span class="s">f"</span>{mesh.<span class="f">get_name</span>()}<span class="s">: </span>{name}<span class="s">"</span>)</div>
+<div class="errline" id="ln88">        settings <span class="o">=</span> <span class="cursor" style="margin:0 -1px"></span><span class="rt">presets[name]</span><span class="anno err" id="anno88">✖ KeyError: 'LOD1'</span></div>
+<div>        reduction.<span class="f">append</span>(<span class="t">Settings</span>(</div>
+<div>            <span class="p">percent_triangles</span><span class="o">=</span>settings[<span class="s">"tris"</span>],</div>
+<div>            <span class="p">screen_size</span><span class="o">=</span>settings[<span class="s">"screen"</span>],</div>
+<div>        ))</div>
+<div>    options.reduction_settings <span class="o">=</span> reduction</div>
+<div>    <span class="sqw">mesh.lod_group</span> <span class="o">=</span> LOD_GROUPS[preset]</div>
+<div>    <span class="c">return</span> sms.<span class="f">set_lods</span>(mesh, options)</div>
+<div></div>
+<div></div>
+      </div>
+      <div class="insp"><span class="e">✖ 1</span><span class="w">⚠ 2</span><span>⌃ ⌄</span></div>
+      <div class="stripe"><div class="vis" style="top:48%;height:20%"></div><i class="w" style="top:3%"></i><i class="e" style="top:58%"></i><i class="w" style="top:62%"></i></div>
+    </div>
+    <div class="status">
+      <span class="ok">● Idle · Session</span>
+      <span>Ruff <span class="ok">✓</span></span>
+      <span id="countsB"><span class="err">✖ 1 error</span> &nbsp;<span class="warn">⚠ 2 warnings</span></span>
+      <div class="spacer"></div>
+      <span>Ln 88, Col 20</span><span>UTF-8 · LF</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ C: F8 next problem, then a syntax error ============ -->
+<div class="stage" id="stC">
+  <div class="step"><span class="letter">C</span>Pressed F8 <span class="dim">· the next problem, with a quick fix</span></div>
+  <div class="win" id="winC1">
+    <div class="panel">
+      <div class="panel-head"><div class="tabs"><span>Output</span><span>REPL</span><span class="on">Problems <span class="badge err">1</span> <span class="badge warn">2</span></span></div>
+        <div class="spacer"></div><span class="f4chip" id="f4chip">Problem 2 of 3 <span class="kc">F8</span> <span class="kc">Shift+F8</span></span></div>
+      <div class="probs flat">
+        <div class="r"><span class="ic e">✖</span><span class="msg"><code>KeyError: 'LOD1'</code> in build_lod_chain</span><span class="from">runtime</span><span class="loc">Ln 88</span></div>
+        <div class="r sel wrap"><span class="ic w">⚠</span><span class="msg"><code>lod_group</code> is not a Python attribute of StaticMesh; the assignment raises AttributeError</span><span class="from">SUM102</span><span class="loc">Ln 94</span></div>
+        <div class="r"><span class="ic w">⚠</span><span class="msg"><code>shutil</code> imported but unused</span><span class="from">F401</span><span class="loc">Ln 6</span></div>
+      </div>
+    </div>
+    <div class="splitter-h"></div>
+    <div class="etabs">
+      <div class="etab"><span class="lang">PY</span>Untitled-3<span class="x">×</span></div>
+      <div class="etab active"><span class="lang">PY</span>importer.py<span class="x">×</span></div>
+      <div class="etab" style="color:var(--text-lo)">＋</div>
+    </div>
+    <div class="breadcrumb">Content/Python › studio_tools › importer.py › <span class="fn">build_lod_chain</span></div>
+    <div class="code" style="height:264px">
+      <div class="gutter">
+        <div>85</div><div>86</div><div>87</div><div class="ge">88</div><div>89</div><div>90</div><div>91</div><div>92</div><div>93</div><div class="bulb cur">94</div><div>95</div><div>96</div><div>97</div><div>98</div>
+      </div>
+      <div class="lines">
+<div>    <span class="c">for</span> index <span class="c">in</span> <span class="f">range</span>(MAX_LODS):</div>
+<div>        name <span class="o">=</span> <span class="s">f"LOD</span>{index}<span class="s">"</span></div>
+<div>        unreal.<span class="f">log</span>(<span class="s">f"</span>{mesh.<span class="f">get_name</span>()}<span class="s">: </span>{name}<span class="s">"</span>)</div>
+<div class="errline">        settings <span class="o">=</span> <span class="rt">presets[name]</span><span class="anno err">✖ KeyError: 'LOD1'</span></div>
+<div>        reduction.<span class="f">append</span>(<span class="t">Settings</span>(</div>
+<div>            <span class="p">percent_triangles</span><span class="o">=</span>settings[<span class="s">"tris"</span>],</div>
+<div>            <span class="p">screen_size</span><span class="o">=</span>settings[<span class="s">"screen"</span>],</div>
+<div>        ))</div>
+<div>    options.reduction_settings <span class="o">=</span> reduction</div>
+<div class="curline" id="c94">    <span class="cursor" style="margin:0 -1px"></span><span class="sqw" id="c94w">mesh.lod_group</span> <span class="o">=</span> LOD_GROUPS[preset]</div>
+<div>    <span class="c">return</span> sms.<span class="f">set_lods</span>(mesh, options)</div>
+<div></div>
+<div></div>
+<div><span class="k">def</span> <span class="f">import_and_build</span>(<span class="p">files</span>, <span class="p">dest</span><span class="o">=</span>...):</div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="ok">● Idle</span>
+      <span><span class="err">✖ 1</span> &nbsp;<span class="warn">⚠ 2</span></span>
+      <div class="spacer"></div>
+      <span>Ln 94, Col 5</span><span>UTF-8 · LF</span>
+    </div>
+  </div>
+
+  <div class="step sub"><span class="letter">C′</span>Separate case: Ctrl+Enter on a buffer that does not parse</div>
+  <div class="win fill" id="winC2">
+    <div class="panel grow">
+      <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems <span class="badge err">2</span> <span class="badge warn">2</span></span></div></div>
+      <div class="out grow">
+        <div class="hdr bad"><b>✖ Run #32</b><span id="hdr32t">Untitled-4 · whole buffer · not executed</span><span class="spacer"></span><span class="ts">14:25:40</span></div>
+        <div class="eb err">  File <span class="link">"&lt;dream:Untitled-4#c07d&gt;", line 6</span></div>
+        <div class="eb src">    actor.set_actor_location(</div>
+        <div class="eb src">                            ^</div>
+        <div class="eb err" id="synErr">SyntaxError: '(' was never closed<span class="note"> — nothing was executed</span></div>
+      </div>
+      <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+    </div>
+    <div class="splitter-h"></div>
+    <div class="etabs">
+      <div class="etab"><span class="lang">PY</span>Untitled-3<span class="x">×</span></div>
+      <div class="etab"><span class="lang">PY</span>importer.py<span class="x">×</span></div>
+      <div class="etab active"><span class="lang">PY</span>Untitled-4<span class="dot"></span></div>
+    </div>
+    <div class="code" style="height:156px">
+      <div class="gutter">
+        <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div class="ge cur">6</div><div>7</div><div>8</div>
+      </div>
+      <div class="lines">
+<div><span class="c">import</span> unreal</div>
+<div>eas <span class="o">=</span> unreal.<span class="f">get_editor_subsystem</span>(</div>
+<div>    unreal.<span class="t">EditorActorSubsystem</span>)</div>
+<div><span class="c">for</span> actor <span class="c">in</span> eas.<span class="f">get_selected_level_actors</span>():</div>
+<div>    loc <span class="o">=</span> actor.<span class="f">get_actor_location</span>()</div>
+<div class="curline errline" id="synLine">    actor.<span class="f">set_actor_location</span><span class="sq" id="synParen">(</span><span class="cursor"></span><span class="anno err">✖ '(' was never closed</span></div>
+<div>        unreal.<span class="t">Vector</span>(loc.x, loc.y, <span class="n">0.0</span>),</div>
+<div>        <span class="k">False</span>, <span class="k">False</span></div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="ok">● Idle</span>
+      <span class="err">✖ Run #32 not executed</span>
+      <div class="spacer"></div>
+      <span>Ln 6, Col 29</span><span>UTF-8 · LF</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- popups (children of the canvas so the windows never clip them) -->
+<div class="popup tip" id="tip" data-anchor="#tbFile" data-at="br" data-dx="-66" data-dy="4" style="width:196px">
+  <div class="doc"><b>Open importer.py at line 88</b><br><span class="dim">Content/Python/studio_tools</span><br><span class="dim">Click, or F4 from the output</span></div>
+</div>
+<div class="popup qf" id="qf" data-anchor="#c94w" data-at="bl" data-dx="-22" data-dy="3" style="width:316px">
+  <div class="qh"><span>⚠ SUM102 · use set_editor_property</span><span class="spacer"></span><span class="pill">Ctrl+.</span></div>
+  <div class="it on"><span class="em">💡</span>Rewrite with set_editor_property()</div>
+  <div class="it"><span class="em"></span>Ignore SUM102 on line 94</div>
+  <div class="it"><span class="em"></span>Open rule documentation</div>
+</div>
+
+<!-- arrows between stages, drawn by the script below -->
+<svg id="wires"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b8cf0"/></marker></defs></svg>
+<div class="act" id="act1"><span class="em">🖱</span>Click or<br><span class="kc" style="margin:2px 0">F4</span><span class="sm">frame 2 · line 88</span></div>
+<div class="act" id="act2"><span class="kc">F8</span><br>next<br>problem</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#hdr31" data-at="l" data-dx="-11" data-dy="9"><div class="num">1</div></div>
+<div class="callout" data-for="#typeChips" data-at="t" data-dx="10" data-dy="-17"><div class="num">2</div></div>
+<div class="callout" data-for="#fr1" data-at="r" data-dx="20" data-dy="-3"><div class="num">3</div></div>
+<div class="callout" data-for="#tip" data-at="r" data-dx="18"><div class="num">4</div></div>
+<div class="callout" data-for="#originTxt" data-at="r" data-dx="20"><div class="num">5</div></div>
+<div class="callout" data-for="#anno88" data-at="r" data-dx="20"><div class="num">6</div></div>
+<div class="callout" data-for="#grpB" data-at="r" data-dx="22"><div class="num">7</div></div>
+<div class="callout" data-for="#f4chip" data-at="r" data-dx="15"><div class="num">8</div></div>
+<div class="callout" data-for="#qf" data-at="r" data-dx="18"><div class="num">9</div></div>
+<div class="callout" data-for="#hdr32t" data-at="r" data-dx="22"><div class="num">10</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Red run block.</b> A failed run gets a red header and a red edge down its lines: run number, the buffer and lines that ran, time, duration, the outcome <code>error</code> and the undo step <code>Dream: Untitled-3 #31</code>. Errors keep their transaction; Undo this run reverts it. Below, the buffer's gutter marks Run #31 statement by statement (EDT-18): lines 12–16 ran ok, the <code>for</code> statement (lines 17–19) raised, and line 20 was never reached.</span></div>
+  <div><span class="num">2</span><span><b>Typed lines.</b> Echo, output, info, warnings and errors each have their own colour and a show/hide toggle. Here Echo (the toolbar's Echo input) is switched off, so only what the run printed or logged is shown, not the statements it ran.</span></div>
+  <div><span class="num">3</span><span><b>Frames name the buffer.</b> An untitled buffer has no <code>__file__</code>, so its frames use the pseudo-filename <code>&lt;dream:Untitled-3#a41f&gt;</code>, registered in linecache; <code>a41f</code> is the first 4 hex digits of the buffer's id, extended until it is unique. Line 18 is the real buffer line, not line 7 of the selection.</span></div>
+  <div><span class="num">4</span><span><b>Clickable frames, and F4.</b> Every frame and error link is clickable. F4 and Shift+F4 walk the frames and error links in the output; hovering shows where a link goes.</span></div>
+  <div><span class="num">5</span><span><b>Where you came from.</b> A slim bar says the tab was opened from Run #31's traceback and which frame this is. Back to Output returns to the run block. Breadcrumbs show the path and the function.</span></div>
+  <div><span class="num">6</span><span><b>The error stays on the line.</b> The raising line is tinted red, the failing expression is underlined, as the 3.11 carets mark it, and an inline note repeats <code>KeyError: 'LOD1'</code>.</span></div>
+  <div><span class="num">7</span><span><b>A runtime item in Problems.</b> The uncaught exception is a <code>runtime</code> item for the file and line where it was raised, next to the lint results. It clears at the next run started from the same source as Run #31 (here Untitled-3), a reload of its module, an edit of line 88, or Problems ▸ Clear runtime items, so re-running Untitled-3 after the fix clears it.</span></div>
+  <div><span class="num">8</span><span><b>F8 walks Problems.</b> F8 jumps to the next problem and Shift+F8 to the previous one. The editor moves to line 94 and the panel shows “Problem 2 of 3”.</span></div>
+  <div><span class="num">9</span><span><b>Quick fix, Ctrl+.</b> <code>lod_group</code> is an editor-only property with no Python attribute, so the assignment would raise AttributeError. SUM102 rewrites it as <code>set_editor_property("lod_group", …)</code>. The PyCharm preset uses Alt+Enter.</span></div>
+  <div><span class="num">10</span><span><b>Syntax errors stop the run.</b> The parse check runs in <code>Starting</code>, before anything executes. The run still gets a number, #32, with the outcome <code>not executed</code>, and the caret points at the unclosed <code>(</code>.</span></div>
+</div>
+</div>
+
+<script>
+// Draws the labelled arrows that join the stages: from the element the user acts on to where it lands.
+(function () {
+  const cv = document.querySelector(".canvas").getBoundingClientRect();
+  const box = el => { const r = document.querySelector(el).getBoundingClientRect();
+    return { l: r.left - cv.left, r: r.right - cv.left, t: r.top - cv.top, b: r.bottom - cv.top, cy: (r.top + r.bottom) / 2 - cv.top }; };
+  const svg = document.getElementById("wires");
+  function wire(fromWin, fromEl, toWin, toEl, label) {
+    const a = box(fromWin), b = box(toWin), y1 = box(fromEl).cy, y2 = box(toEl).cy;
+    const x1 = a.r + 3, x2 = b.l - 3, xm = (a.r + b.l) / 2, k = 8, s = y2 > y1 ? 1 : -1;
+    const d = `M${x1},${y1} H${xm - k} Q${xm},${y1} ${xm},${y1 + s * k} V${y2 - s * k} Q${xm},${y2} ${xm + k},${y2} H${x2}`;
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    Object.entries({ d, fill: "none", stroke: "#3b8cf0", "stroke-width": 2, "marker-end": "url(#ah)" }).forEach(([k2, v]) => p.setAttribute(k2, v));
+    svg.appendChild(p);
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    Object.entries({ cx: x1, cy: y1, r: 3.5, fill: "#3b8cf0" }).forEach(([k2, v]) => c.setAttribute(k2, v));
+    svg.appendChild(c);
+    const lab = document.getElementById(label);
+    lab.style.left = xm + "px"; lab.style.top = ((y1 + y2) / 2) + "px";
+  }
+  wire("#winA", "#tbFile", "#winB", "#ln88", "act1");
+  wire("#winB", "#probB2", "#winC1", "#c94", "act2");
+})();
+</script>
+<script src="callouts.js"></script>
+</body></html>

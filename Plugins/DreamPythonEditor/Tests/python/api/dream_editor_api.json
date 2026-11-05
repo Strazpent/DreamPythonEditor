@@ -1,0 +1,82 @@
+{
+  "digest": "6fb9579626a0",
+  "names": {
+    "ScriptCancelled": {
+      "attributes": {
+        "delivery": {
+          "default": 0,
+          "type": "int"
+        },
+        "run_number": {
+          "default": 0,
+          "type": "int"
+        },
+        "source": {
+          "default": "async",
+          "type": "str"
+        }
+      },
+      "bases": [
+        "KeyboardInterrupt"
+      ],
+      "doc": "Raised in the running script when the user presses Stop (D2).",
+      "kind": "class",
+      "since": "0.1.0"
+    },
+    "__version__": {
+      "kind": "version",
+      "since": "0.1.0"
+    },
+    "check_cancel": {
+      "doc": "Raise ScriptCancelled if Stop was requested for this run (game thread); else return whether it was.",
+      "kind": "function",
+      "signature": "()",
+      "since": "0.1.0"
+    },
+    "clear_output": {
+      "doc": "Clear the Dream output view. GT only; works during a run.",
+      "kind": "function",
+      "signature": "()",
+      "since": "0.1.0"
+    },
+    "new_tab": {
+      "doc": "Create a scratch tab. Returns the tab ID. GT only.",
+      "kind": "function",
+      "signature": "(text='', name=None)",
+      "since": "0.1.0"
+    },
+    "open": {
+      "doc": "Open or focus a file in a Dream tab and place the caret. Returns the tab ID. GT only.",
+      "kind": "function",
+      "signature": "(path, line=None, column=None)",
+      "since": "0.1.0"
+    },
+    "progress": {
+      "doc": "Report i of n items done (U12); n None is an indeterminate bar. Any thread; a no-op outside a run.",
+      "kind": "function",
+      "signature": "(i, n=None, msg='')",
+      "since": "0.1.0"
+    },
+    "run": {
+      "doc": "Queue a run of a tab (ID or name) or a file; return its number. RuntimeError inside a run. GT only.",
+      "kind": "function",
+      "signature": "(target, *, namespace=None, transaction=None)",
+      "since": "0.1.0"
+    },
+    "sleep": {
+      "doc": "Sleep in slices of at most 50 ms; raise ScriptCancelled on Stop (D2). Any thread.",
+      "kind": "function",
+      "signature": "(seconds)",
+      "since": "0.1.0"
+    },
+    "suppress": {
+      "doc": "Hide or show output kinds, like Maya's scriptEditorInfo -suppress* flags.",
+      "kind": "function",
+      "signature": "(*, results=None, info=None, warnings=None, errors=None, echo=None)",
+      "since": "0.1.0"
+    }
+  },
+  "package": "dream_editor",
+  "schema": 1,
+  "version": "0.1.0"
+}

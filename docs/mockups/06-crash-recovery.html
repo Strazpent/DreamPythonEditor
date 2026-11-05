@@ -1,0 +1,434 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport-size" content="1600x2124">
+<title>Crash recovery</title>
+<link rel="stylesheet" href="ue.css">
+<style>
+  .scene { position: relative; }
+  .scene-label { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; color: var(--text-hi); font: 600 14px var(--ui); }
+  .scene-label .tag { width: 22px; height: 22px; border-radius: 4px; background: var(--bg5); color: var(--text-hi); font: 700 12px/22px var(--ui); text-align: center; }
+  .scene-label .sub { color: var(--text-lo); font-weight: 400; font-size: 12.5px; }
+  .gap { height: 22px; }
+  #winA { height: 690px; }
+
+  /* recovery banner (non-modal, sits under the toolbar) */
+  .banner { display: flex; align-items: center; gap: 12px; padding: 7px 12px; background: #10233a; border-bottom: 1px solid #1f4a75;
+            box-shadow: inset 3px 0 0 var(--info); min-height: 44px; }
+  .banner .bico { width: 24px; height: 24px; border-radius: 50%; background: #1d4f80; color: #d6ecff; font: 700 15px/24px "Segoe UI Symbol", var(--ui); text-align: center; flex: none; }
+  .banner b { color: var(--text-hi); font-weight: 600; font-size: 12.5px; }
+  .banner .bsub { display: block; color: #9ab6d3; font-size: 11.5px; margin-top: 1px; }
+  .banner .btn { padding: 4px 14px; }
+  .btn.on { background: #4a4a4a; box-shadow: inset 0 0 0 1px #6a6a6a; }
+
+  /* tabs pending recovery */
+  .etab.pend { color: #a9c4e2; }
+  .etab.pend.active { color: var(--text-hi); }
+  .etab .rec { color: var(--info); font: 13px "Segoe UI Symbol", var(--ui); }
+  .etab .cw { color: var(--warn); }
+  .breadcrumb .recov { color: #9ab6d3; }
+
+  #codeA { height: 300px; }
+  .outA { height: 172px; }
+
+  /* review window (a floating, non-modal tool window) */
+  .review { width: 800px; font-size: 12px; }
+  .review .dh { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #2a2a2a; border-radius: 5px 5px 0 0; }
+  .review .dh .wb { color: var(--text-lo); font-weight: 400; margin-left: 12px; }
+  .review .sess { padding: 7px 12px; color: var(--text-lo); border-bottom: 1px solid var(--line); background: var(--bg3); }
+  .review .sess b { color: var(--text); font-weight: 600; }
+  .review .sess .ok { color: var(--ok); }
+  .rt { display: grid; grid-template-columns: 24px 178px 70px 218px 190px 1fr; align-items: center; height: 27px; padding: 0 12px;
+        border-bottom: 1px solid #1e1e1e; background: var(--bg1); white-space: nowrap; }
+  .rt.head { height: 24px; background: var(--bg3); color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; }
+  .rt.sel { background: #1a2b40; }
+  .rt .nm { color: var(--text-hi); display: flex; align-items: center; gap: 6px; overflow: hidden; }
+  .rt .nm .lang { font: 700 9px var(--mono); color: #ffd54f; }
+  .rt .dim, .review .dim { color: var(--text-lo); }
+  .rt .act { justify-self: end; color: var(--info); }
+  .rt .badge { margin-right: 6px; }
+  .rt .btn { padding: 2px 12px; font-size: 11.5px; }
+  .detail { background: #1a2b40; border-bottom: 1px solid #1e1e1e; padding: 2px 12px 8px 36px; color: #c9d7e6; font-size: 11.5px; line-height: 1.45; }
+  .detail b { color: #ffe08a; font-weight: 600; }
+  .detail code { font-family: var(--mono); color: var(--text-hi); font-size: 11px; }
+  .note { padding: 6px 12px 6px 36px; color: var(--text-lo); background: var(--bg1); border-bottom: 1px solid var(--line); font-size: 11.5px; }
+  .grp { padding: 6px 12px; background: var(--bg3); color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--line); }
+  .grp b { color: var(--text); font-weight: 600; }
+  .review .df { align-items: center; }
+  .review .df .info { color: var(--text-lo); margin-right: auto; }
+
+  /* scene B: local history */
+  .lhbar { height: 38px; background: var(--bg3); display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .lhbar .lt { color: var(--text-hi); font-weight: 600; }
+  .lhbar .fn { color: var(--text-hi); font-family: var(--mono); font-size: 12px; }
+  .chip { border: 1px solid var(--edge); border-radius: 11px; padding: 2px 10px; color: var(--text-lo); font-size: 11.5px; }
+  .chip.on { background: #1d2f45; border-color: #2f5680; color: #cfe3f8; }
+  .chip.on::before { content: "\2713  "; }
+  .lhbar .btn { padding: 4px 13px; }
+  .lhbody { height: 588px; }
+  .tlp { width: 300px; }
+  .tl { flex: 1; padding: 2px 0; }
+  .day { padding: 6px 10px 3px; color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; }
+  .ent { position: relative; display: grid; grid-template-columns: 64px 20px 1fr; height: 36px; align-items: start; padding-top: 3px; }
+  .ent::before { content: ""; position: absolute; left: 72px; top: 0; bottom: 0; width: 2px; background: #2e2e2e; }
+  .ent.first::before { top: 12px; } .ent.last::before { bottom: 26px; }
+  .ent .tm { font: 11px/16px var(--mono); color: var(--text-lo); text-align: right; padding-right: 6px; }
+  .ent .node { position: relative; z-index: 1; width: 12px; height: 12px; border-radius: 50%; margin: 2px 0 0 3px; background: var(--bg1); }
+  .node.run { background: var(--accent); } .node.save { background: var(--ok); } .node.ext { background: #b180d7; }
+  .node.cur { background: var(--bg1); box-shadow: inset 0 0 0 2px #fff; }
+  .ent .lb { color: var(--text-hi); line-height: 16px; }
+  .ent .sb { color: var(--text-lo); font-size: 11px; line-height: 16px; white-space: nowrap; }
+  .ent.sel { background: var(--accent-lo); }
+  .ent.sel .tm { color: #bfe0ff; } .ent.sel .sb { color: #a8c7ee; }
+  .same { font: 10px var(--mono); background: #2a2a2a; color: #9a9a9a; border-radius: 3px; padding: 0 5px; }
+  .store { margin: 0 8px 8px; padding: 8px 10px; border: 1px solid #2c2c2c; border-radius: 4px; background: #181818; font-size: 11.5px; }
+  .store .h { color: var(--text-hi); font-weight: 600; margin-bottom: 3px; }
+  .store .pth { font: 10.5px/15px var(--mono); color: #9cdcfe; }
+  .store .progress { margin: 7px 0 4px; }
+  .store .dim { color: var(--text-lo); }
+
+  .diff { background: var(--bg2); font: 11.5px/17px var(--mono); color: #d4d4d4; }
+  .dr { display: grid; grid-template-columns: 32px minmax(0,1fr) 26px 32px minmax(0,1fr); height: 17px; }
+  .dr > span { white-space: pre; overflow: hidden; }
+  .dr .ln { color: #5a5a5a; text-align: right; padding-right: 6px; }
+  .dr .tx { padding-left: 4px; }
+  .dr .tx.l { border-right: 1px solid #2b2b2b; }
+  .dr .hk { background: #181818; text-align: center; border-right: 1px solid #2b2b2b; }
+  .dr .hk.in { background: #22262c; }
+  .dr .hk .chk { margin: 2px 0 0 0; width: 12px; height: 12px; }
+  .dr .del { background: rgba(255,82,82,.11); }
+  .dr .add { background: rgba(76,175,80,.13); }
+  .dr .ln.del, .dr .ln.add { color: #8a8a8a; }
+  .dr .fill { background: repeating-linear-gradient(135deg, #1c1c1c 0 5px, #232323 5px 7px); }
+  .xl { background: rgba(255,82,82,.32); font-style: normal; border-radius: 2px; }
+  .xr { background: rgba(76,175,80,.36); font-style: normal; border-radius: 2px; }
+  .dhd { display: grid; grid-template-columns: 1fr 26px 1fr; height: 28px; align-items: center; background: var(--bg3); border-bottom: 1px solid var(--line); font: 12px var(--ui); }
+  .dhd > div { padding: 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-hi); white-space: nowrap; }
+  .dhd .dim { color: var(--text-lo); }
+  .dhd .mid { background: #181818; height: 100%; padding: 0; }
+  .dft { height: 26px; display: flex; align-items: center; gap: 16px; padding: 0 10px; background: var(--bg3); border-top: 1px solid var(--line); font-size: 11.5px; color: var(--text-lo); }
+  .dft .a { color: #9be39f; } .dft .c { color: #ffb4b4; }
+  /* v2: scene A with a docked review panel and a conflict diff */
+  .node.rec { background: #ffb300; }
+  .dr.two { grid-template-columns: 32px minmax(0,1fr) 6px 32px minmax(0,1fr); }
+  .dr.two .hk { background: #151515; }
+  .dr .mine { background: rgba(79,195,247,.11); }
+  .dr .ln.mine { color: #8a8a8a; }
+  .xm { background: rgba(79,195,247,.34); font-style: normal; border-radius: 2px; }
+  .confbar { height: 26px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #2e2608; border-bottom: 1px solid #5a4a10;
+             color: #ffe08a; font-size: 11.5px; white-space: nowrap; box-shadow: inset 3px 0 0 var(--warn); }
+  .confbar b { color: #fff3c4; font-weight: 600; }
+  .confbar .btn { padding: 1px 10px; font-size: 11px; }
+  .etab .rcv { color: #ffe08a; }
+  .recp { width: 470px; }
+  .recp .panel-head .hn { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-lo); font-size: 11px; }
+  .rsess { padding: 7px 10px; color: var(--text-lo); border-bottom: 1px solid var(--line); background: var(--bg2); font-size: 11.5px; line-height: 1.45; }
+  .rsess b { color: var(--text); font-weight: 600; } .rsess .ok { color: var(--ok); }
+  .ritem { display: grid; grid-template-columns: 20px 1fr auto; gap: 6px; padding: 7px 10px; border-bottom: 1px solid #1e1e1e; align-items: start; }
+  .ritem.sel { background: #1a2b40; }
+  .ritem .nm { color: var(--text-hi); display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+  .ritem .nm .lang { font: 700 9px var(--mono); color: #ffd54f; }
+  .ritem .sb { color: var(--text-lo); font-size: 11px; margin-top: 2px; line-height: 1.4; }
+  .ritem .sb b { color: #ffe08a; font-weight: 600; }
+  .ritem .btn { padding: 2px 10px; font-size: 11px; }
+  .ritem .chk { margin-top: 2px; }
+  .rnote { padding: 6px 10px; color: var(--text-lo); font-size: 11px; border-bottom: 1px solid #1e1e1e; line-height: 1.4; }
+  .rgrp { padding: 5px 10px; background: var(--bg3); color: var(--text-lo); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--line); }
+  .rfoot { margin-top: auto; padding: 8px 10px; border-top: 1px solid var(--line); background: var(--bg3); display: flex; gap: 8px; align-items: center; }
+  .rfoot .lo { color: var(--text-lo); font-size: 11px; margin-right: auto; line-height: 1.35; }
+  .rbox { margin: 8px 10px; padding: 7px 9px; border: 1px solid #2c2c2c; border-radius: 4px; background: #181818; font-size: 11px; line-height: 1.45; color: var(--text-lo); }
+  .rbox .h { color: var(--text-hi); font-weight: 600; font-size: 11.5px; }
+  .rbox .pth { font: 10.5px/15px var(--mono); color: #9cdcfe; }
+  .rbox code { font-family: var(--mono); color: var(--text); }
+  #winA { height: 760px; }
+  .outA { height: 150px; }
+  .outB { height: 122px; flex: none; }
+</style></head>
+<body><div class="canvas">
+<div class="title-strip">Dream — crash recovery and local history</div>
+<div class="subtitle-strip">Every buffer is journaled continuously and before every run. Recovery is offered without blocking the editor, a changed disk file is never overwritten without asking, and every save, run and external reload leaves a snapshot you can diff and restore.</div>
+
+<!-- ============ SCENE A ============ -->
+<div class="scene-label"><span class="tag">A</span>The Dream tab reopens after a crash <span class="sub">Non-modal banner, a docked review panel, and a recovered copy opened beside the changed disk file</span></div>
+<div class="scene" id="sceneA">
+<div class="win" id="winA">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    <div class="docktab">Content Browser<span class="x">×</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+    <div class="tb"><span class="ico">⏵</span>Run Cell</div>
+    <div class="tb"><span class="ico">⏹</span><span style="color:var(--text-lo)">Stop</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="ico">🐞</span>Debug</div>
+    <div class="tb"><span class="ico">⟳</span>Reload Package</div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="chk on"></span>One undo step per run</div>
+    <div class="spacer"></div>
+    <div class="search">⌕&nbsp; Search everything (Shift Shift)</div>
+    <div class="tb">⚙</div>
+  </div>
+
+  <div class="banner" id="banner">
+    <span class="bico">⟲</span>
+    <div><b>Recovered 3 buffers from the session that ended unexpectedly at 14:03.</b>
+      <span class="bsub">One has a conflict: batch_rename.py changed on disk after the crash. Nothing on disk was overwritten.</span><span class="bsub">1 buffer from another editor instance is listed apart in Review and not counted.</span></div>
+    <div class="row" id="bannerBtns" style="gap:6px; margin-left:8px">
+      <span class="btn primary">Restore all</span><span class="btn on">Review</span><span class="btn">Discard</span>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+
+  <div class="row grow">
+    <div class="col grow">
+      <div class="panel outA">
+        <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div></div>
+        <div class="out grow" id="outA">
+          <div class="hdr"><b>⟲ Session recovery</b> CitySample · session 09:12 – 14:03 <span class="ts">14:25:41</span></div>
+          <div class="info">Unclean exit: the session lock from PID 14872 has no clean-shutdown marker.</div>
+          <div class="ok">Journal: 3 buffers with changes not on disk · checksums valid · previous generation not needed</div>
+          <div class="warn">batch_rename.py changed on disk (#11 → #12). Opened as batch_rename.py (recovered).</div>
+          <div class="info"><span id="lostLine">Run #22 was running when the editor exited · outcome <b style="color:var(--warn)">lost</b> · recorded in the audit log</span></div>
+        </div>
+        <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+      </div>
+      <div class="splitter-h"></div>
+      <div class="etabs" id="tabsA">
+        <div class="etab pend">📝 Untitled-1 <span class="rec">⟲</span></div>
+        <div class="etab pend"><span class="lang">PY</span>lod_audit.py <span class="rec">⟲</span></div>
+        <div class="etab pend active" id="tabRecovered"><span class="lang">PY</span>batch_rename.py <span class="rcv">(recovered)</span> <span class="rec">⟲</span></div>
+        <div class="etab" id="tabDisk"><span class="lang">PY</span>batch_rename.py<span class="x">×</span></div>
+        <div class="etab"><span class="lang">PY</span>init_unreal.py<span class="x">×</span></div>
+      </div>
+      <div class="confbar" id="confBar">⚠ <b>Changed on disk after the journal's base version</b> · #11 → #12 by a P4 sync at 14:19 · the recovered text opens beside the disk file<span class="spacer"></span><span class="btn">Restore</span><span class="btn">Close diff</span><span class="btn">Discard</span></div>
+      <div class="dhd" style="grid-template-columns: 1fr 6px 1fr">
+        <div>batch_rename.py <span style="color:#ffe08a">(recovered)</span> <span class="dim">· journal 14:03:12 · base #11</span> <span class="badge blue" id="notRestored">🔒 Not restored yet · read-only</span></div>
+        <div class="mid"></div>
+        <div>batch_rename.py <span class="dim">· on disk #12 · CL 48213</span> <span class="badge">read-only view</span></div>
+      </div>
+      <div class="diff grow" id="diffA">
+<div class="dr two"><span class="ln">1</span><span class="tx l"><span class="m"># %% [1] Gather selected assets</span></span><span class="hk"></span><span class="ln">1</span><span class="tx"><span class="m"># %% [1] Gather selected assets</span></span></div>
+<div class="dr two"><span class="ln">2</span><span class="tx l"><span class="c">import</span> unreal</span><span class="hk"></span><span class="ln">2</span><span class="tx"><span class="c">import</span> unreal</span></div>
+<div class="dr two"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk"></span><span class="ln add">3</span><span class="tx add"><span class="c">from</span> studio_tools <span class="c">import</span> naming</span></div>
+<div class="dr two"><span class="ln">3</span><span class="tx l"></span><span class="hk"></span><span class="ln">4</span><span class="tx"></span></div>
+<div class="dr two"><span class="ln mine">4</span><span class="tx l mine">prefix <span class="o">=</span> <em class="xm"><span class="s">"SM_"</span></em></span><span class="hk"></span><span class="ln add">5</span><span class="tx add">prefix <span class="o">=</span> <em class="xr">naming.PREFIXES[<span class="s">"StaticMesh"</span>]</em></span></div>
+<div class="dr two"><span class="ln mine">5</span><span class="tx l mine">report_only <span class="o">=</span> <span class="k">False</span></span><span class="hk"></span><span class="ln fill"></span><span class="tx fill"></span></div>
+<div class="dr two"><span class="ln">6</span><span class="tx l">assets <span class="o">=</span> unreal.<span class="t">EditorUtilityLibrary</span>.<span class="f">get_selected_asset_data</span>()</span><span class="hk"></span><span class="ln">6</span><span class="tx">assets <span class="o">=</span> unreal.<span class="t">EditorUtilityLibrary</span>.<span class="f">get_selected_asset_data</span>()</span></div>
+<div class="dr two"><span class="ln">7</span><span class="tx l"><span class="f">print</span>(<span class="s">f"</span>{<span class="f">len</span>(assets)}<span class="s"> assets selected"</span>)</span><span class="hk"></span><span class="ln">7</span><span class="tx"><span class="f">print</span>(<span class="s">f"</span>{<span class="f">len</span>(assets)}<span class="s"> assets selected"</span>)</span></div>
+<div class="dr two"><span class="ln">8</span><span class="tx l"></span><span class="hk"></span><span class="ln">8</span><span class="tx"></span></div>
+<div class="dr two"><span class="ln">9</span><span class="tx l"><span class="m"># %% [2] Rename</span></span><span class="hk"></span><span class="ln">9</span><span class="tx"><span class="m"># %% [2] Rename</span></span></div>
+<div class="dr two"><span class="ln mine">10</span><span class="tx l mine">renamed <span class="o">=</span> <span class="n">0</span></span><span class="hk"></span><span class="ln fill"></span><span class="tx fill"></span></div>
+<div class="dr two"><span class="ln mine">11</span><span class="tx l mine"><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Batch rename"</span>)<em class="xm">, \</em></span><span class="hk"></span><span class="ln add">10</span><span class="tx add"><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Batch rename"</span>)<em class="xr">:</em></span></div>
+<div class="dr two"><span class="ln mine">12</span><span class="tx l mine">        unreal.<span class="t">ScopedSlowTask</span>(<span class="f">len</span>(assets), <span class="s">"Renaming assets"</span>) <span class="c">as</span> task:</span><span class="hk"></span><span class="ln fill"></span><span class="tx fill"></span></div>
+<div class="dr two"><span class="ln mine">13</span><span class="tx l mine">    task.<span class="f">make_dialog</span>(<span class="k">True</span>)</span><span class="hk"></span><span class="ln fill"></span><span class="tx fill"></span></div>
+<div class="dr two"><span class="ln">14</span><span class="tx l">    <span class="c">for</span> data <span class="c">in</span> assets:</span><span class="hk"></span><span class="ln">11</span><span class="tx">    <span class="c">for</span> data <span class="c">in</span> assets:</span></div>
+<div class="dr two"><span class="ln mine">15</span><span class="tx l mine">        <span class="c">if</span> task.<span class="f">should_cancel</span>():</span><span class="hk"></span><span class="ln fill"></span><span class="tx fill"></span></div>
+<div class="dr two"><span class="ln mine">16</span><span class="tx l mine">            <span class="c">break</span></span><span class="hk"></span><span class="ln fill"></span><span class="tx fill"></span></div>
+<div class="dr two"><span class="ln">17</span><span class="tx l">        name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</span><span class="hk"></span><span class="ln">12</span><span class="tx">        name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</span></div>
+      </div>
+      <div class="dft" id="diffFoot"><span>7 differences in view</span><span>⋯ 10 more lines</span><div class="spacer"></div><span>Restore makes the recovered tab dirty and editable; nothing on disk changes until Save over batch_rename.py…, which asks first</span></div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <!-- the docked recovery review panel (non-modal) -->
+    <div class="panel recp" id="recPanel">
+      <div class="panel-head">Recovery review <span class="hn">docked · the editor stays usable</span></div>
+      <div class="rsess"><b>Session ended unexpectedly</b> · today 09:12 – 14:03:14 · PID 14872 · <span class="ok">✓ checksums valid</span></div>
+      <div class="ritem"><span class="chk on"></span><div><div class="nm">📝 Untitled-1 <span class="badge blue">unsaved</span></div><div class="sb">15 lines · journaled 14:03:12, 2 s before the crash</div></div><span class="btn">Restore</span></div>
+      <div class="ritem"><span class="chk on"></span><div><div class="nm"><span class="lang">PY</span>lod_audit.py <span class="badge warn">dirty</span></div><div class="sb">disk unchanged since 13:40 · journaled 14:01:37</div></div><span class="btn">Restore</span></div>
+      <div class="ritem sel" id="rowConflict"><span class="chk on"></span><div><div class="nm"><span class="lang">PY</span>batch_rename.py <span class="badge err">⚠ conflict</span></div><div class="sb"><b>Disk changed after the journal's base version.</b> Opens as <span style="color:var(--text-hi)">batch_rename.py (recovered)</span> beside the disk file, with a diff.</div></div><span class="btn on">Compare</span></div>
+      <div class="rnote">init_unreal.py had no unsaved changes; it reopens from disk and is not counted.</div>
+      <div class="rgrp">Another editor instance · PID 9920 · yesterday 18:52 · 1 buffer, not counted</div>
+      <div class="ritem"><span class="chk"></span><div><div class="nm">📝 Untitled-4 <span class="badge blue">unsaved</span></div><div class="sb">22 lines · its own journal namespace, so never mixed in</div></div><span class="btn">Restore</span></div>
+      <div class="rbox" id="pathBox"><div class="h">Journal location</div><div class="pth">%LOCALAPPDATA%\DreamPythonEditor\5.8\CitySample-7c41e2\</div>
+        Per user, per project, outside the project and engine trees. A moved project's old journal is found through <code>projects.json</code>.</div>
+      <div class="rbox" id="safeBox"><div class="h">Safe mode</div>
+        Two crashes in a row during session restore start Dream in safe mode: no session restore (this list still shows), the Run window presentation, and language servers off. Also <code>-DreamSafeMode</code>, or hold Shift while opening the tab.</div>
+      <div class="rfoot" style="flex-wrap:wrap"><span class="lo" id="rDiscard" style="flex-basis:100%; margin:0 0 6px">Discard moves the journals into local history; it never deletes them.</span><span class="spacer"></span><span class="btn">Discard</span><span class="btn primary">Restore selected (3)</span></div>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="ok">● Idle</span><span>Session</span>
+    <span class="warn">⟲ Recovery pending · 3 buffers</span>
+    <span>Language server <span class="ok">✓</span></span>
+    <div class="spacer"></div>
+    <span>Ln 1, Col 1</span><span>UTF-8 · LF</span><span>Journaled 14:25:44</span>
+  </div>
+</div>
+</div>
+
+<div class="gap"></div>
+
+<!-- ============ SCENE B ============ -->
+<div class="scene-label"><span class="tag">B</span>Local History for batch_rename.py <span class="sub">Timeline of snapshots, side-by-side diff against the current buffer, partial revert</span></div>
+<div class="scene" id="sceneB">
+<div class="win" id="winB">
+  <div class="win-title"><span class="ue-logo"></span>
+    <div class="menus"><span>File</span><span>Edit</span><span>Window</span><span>Tools</span><span>Build</span><span>Select</span><span>Actor</span><span>Help</span></div>
+    <div class="spacer"></div><span style="color:var(--text-lo)">CitySample — Unreal Editor 5.8</span>
+  </div>
+  <div class="docktabs">
+    <div class="docktab">Lvl_Downtown<span class="x">×</span></div>
+    <div class="docktab active"><span class="dream-mark"></span>Dream<span class="x">×</span></div>
+    <div class="docktab">Content Browser<span class="x">×</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="tb primary splitrun"><span class="sr-main"><span class="ico">▶</span>Run · <span class="sr-mode">Session</span></span><span class="sr-caret">▾</span></div>
+    <div class="tb"><span class="ico">⏵</span>Run Cell</div>
+    <div class="tb"><span class="ico">⏹</span><span style="color:var(--text-lo)">Stop</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb"><span class="ico">🐞</span>Debug</div>
+    <div class="tb"><span class="ico">⟳</span>Reload Package</div>
+    <div class="tb-sep"></div>
+
+    <div class="tb"><span class="chk on"></span>One undo step per run</div>
+    <div class="tb"><span class="chk on"></span>Echo input</div>
+    <div class="spacer"></div>
+    <div class="search">⌕&nbsp; Search everything (Shift Shift)</div>
+    <div class="tb">⚙</div>
+  </div>
+  <div class="panel outB">
+    <div class="panel-head"><div class="tabs"><span class="on">Output</span><span>REPL</span><span>Problems</span></div></div>
+    <div class="out grow follow">
+      <div class="warn">batch_rename.py changed on disk (#11 → #12). Opened as batch_rename.py (recovered).</div>
+      <div class="info">Run #22 was running when the editor exited · outcome <b style="color:var(--warn)">lost</b> · recorded in the audit log</div>
+      <div class="ok">Restored 3 buffers at 14:25 · batch_rename.py (recovered) kept as the current text · disk version #12 kept in local history</div>
+    </div>
+    <div class="prompt"><span class="ps">&gt;&gt;&gt;</span><span><span class="cursor"></span></span><span class="spacer"></span><span class="pill">Enter run · Shift+Enter newline · ↑ history</span></div>
+  </div>
+  <div class="splitter-h"></div>
+  <div class="etabs">
+    <div class="etab"><span class="lang">PY</span>batch_rename.py<span class="dot"></span></div>
+    <div class="etab"><span class="lang">PY</span>lod_audit.py<span class="dot"></span></div>
+    <div class="etab">📝 Untitled-1<span class="dot"></span></div>
+    <div class="etab"><span class="lang">PY</span>validate_naming.py<span class="dot"></span></div>
+    <div class="etab" style="color:var(--text-lo)">… 2 more</div>
+    <div class="etab active">🕘 Local History: batch_rename.py<span class="x">×</span></div>
+  </div>
+  <div class="lhbar">
+    <span class="lt">🕘 Local History</span><span class="fn">batch_rename.py</span><span style="color:var(--text-lo)">Content/Python/tools</span>
+    <div class="tb-sep"></div>
+    <span style="color:var(--text-lo)">Show</span><span class="chip on">Saves</span><span class="chip on">Runs</span><span class="chip on">External reloads</span><span class="chip on">Recovery</span>
+    <div class="tb-sep"></div>
+    <div class="combo">Side by side ▾</div><div class="tb"><span class="chk"></span>Ignore whitespace</div>
+    <div class="spacer"></div>
+    <div class="row" id="lhBtns" style="gap:6px">
+      <span class="btn">Restore</span><span class="btn">Restore as new tab</span><span class="btn primary">Revert selected hunks (2)</span>
+    </div>
+  </div>
+
+  <div class="row lhbody">
+    <div class="panel tlp">
+      <div class="panel-head">Timeline <div class="spacer"></div><span style="font-weight:400;text-transform:none;color:var(--text-lo)">11 entries</span></div>
+      <div class="tl">
+        <div class="day">Today</div>
+        <div class="ent first"><span class="tm">14:31</span><span class="node cur"></span><div><div class="lb">Current buffer</div><div class="sb">recovered text kept · dirty</div></div></div>
+        <div class="ent" id="recEntry"><span class="tm">14:26:10</span><span class="node rec"></span><div><div class="lb">Disk version #12</div><div class="sb">kept when the conflict was resolved</div></div></div>
+        <div class="ent"><span class="tm">14:02:51</span><span class="node run"></span><div><div class="lb">Before run #22</div><div class="sb">cell [2] · lost · <span class="same">same as current</span></div></div></div>
+        <div class="ent"><span class="tm">13:47:30</span><span class="node save"></span><div><div class="lb">Saved</div><div class="sb">Ctrl+S · 25 lines</div></div></div>
+        <div class="ent"><span class="tm">13:12:09</span><span class="node run"></span><div><div class="lb">Before run #18</div><div class="sb">whole buffer · ok</div></div></div>
+        <div class="ent sel" id="entSel"><span class="tm">12:41:07</span><span class="node run"></span><div><div class="lb">Before run #14</div><div class="sb">cell [2] · error</div></div></div>
+        <div class="ent"><span class="tm">12:40:51</span><span class="node run"></span><div><div class="lb">Before run #13</div><div class="sb">cell [1] · ok · <span class="same" id="dedup">same as 12:38:14</span></div></div></div>
+        <div class="ent"><span class="tm">12:38:14</span><span class="node save"></span><div><div class="lb">Saved</div><div class="sb">Ctrl+S · 16 lines</div></div></div>
+        <div class="ent" id="extEntry"><span class="tm">11:02:40</span><span class="node ext"></span><div><div class="lb">External reload after P4 sync</div><div class="sb">#7 → #8 · CL 48190 · buffer was clean</div></div></div>
+        <div class="day">Yesterday</div>
+        <div class="ent first"><span class="tm">18:22:05</span><span class="node save"></span><div><div class="lb">Saved</div><div class="sb">Save All · 14 lines</div></div></div>
+        <div class="ent last"><span class="tm">17:55:31</span><span class="node run"></span><div><div class="lb">Before run #9</div><div class="sb">whole buffer · error</div></div></div>
+      </div>
+      <div class="store" id="storeBox">
+        <div class="h">Stored per user, outside the project</div>
+        <div class="pth">%LOCALAPPDATA%\DreamPythonEditor\5.8\<br>CitySample-7c41e2\history\</div>
+        <div class="progress"><i style="width:4%"></i></div>
+        <div class="dim">18.4 MB of 500 MB · kept 30 days</div>
+      </div>
+    </div>
+    <div class="splitter-v"></div>
+
+    <div class="col grow diffwrap">
+      <div class="dhd">
+        <div id="dhLeft">Before run #14 <span class="dim">· today 12:41:07</span> <span class="badge">read-only</span></div>
+        <div class="mid"></div>
+        <div id="dhRight">Current buffer <span class="dim">· recovered text</span> <span class="badge warn">dirty</span></div>
+      </div>
+      <div class="diff grow" id="diff">
+<div class="dr"><span class="ln">1</span><span class="tx l"><span class="m"># %% [1] Gather selected assets</span></span><span class="hk"></span><span class="ln">1</span><span class="tx"><span class="m"># %% [1] Gather selected assets</span></span></div>
+<div class="dr"><span class="ln">2</span><span class="tx l"><span class="c">import</span> unreal</span><span class="hk"></span><span class="ln">2</span><span class="tx"><span class="c">import</span> unreal</span></div>
+<div class="dr"><span class="ln">3</span><span class="tx l"></span><span class="hk"></span><span class="ln">3</span><span class="tx"></span></div>
+<div class="dr"><span class="ln">4</span><span class="tx l">prefix <span class="o">=</span> <span class="s">"SM_"</span></span><span class="hk"></span><span class="ln">4</span><span class="tx">prefix <span class="o">=</span> <span class="s">"SM_"</span></span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill" id="fill5"></span><span class="hk in"><span class="chk on" id="hunk1"></span></span><span class="ln add">5</span><span class="tx add">report_only <span class="o">=</span> <span class="k">False</span></span></div>
+<div class="dr"><span class="ln">5</span><span class="tx l">assets <span class="o">=</span> unreal.<span class="t">EditorUtilityLibrary</span>.<span class="f">get_selected_asset_data</span>()</span><span class="hk"></span><span class="ln">6</span><span class="tx">assets <span class="o">=</span> unreal.<span class="t">EditorUtilityLibrary</span>.<span class="f">get_selected_asset_data</span>()</span></div>
+<div class="dr"><span class="ln">6</span><span class="tx l"><span class="f">print</span>(<span class="s">f"</span>{<span class="f">len</span>(assets)}<span class="s"> assets selected"</span>)</span><span class="hk"></span><span class="ln">7</span><span class="tx"><span class="f">print</span>(<span class="s">f"</span>{<span class="f">len</span>(assets)}<span class="s"> assets selected"</span>)</span></div>
+<div class="dr"><span class="ln">7</span><span class="tx l"></span><span class="hk"></span><span class="ln">8</span><span class="tx"></span></div>
+<div class="dr"><span class="ln">8</span><span class="tx l"><span class="m"># %% [2] Rename</span></span><span class="hk"></span><span class="ln">9</span><span class="tx"><span class="m"># %% [2] Rename</span></span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"><span class="chk"></span></span><span class="ln add">10</span><span class="tx add">renamed <span class="o">=</span> <span class="n">0</span></span></div>
+<div class="dr"><span class="ln del">9</span><span class="tx l del"><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Batch rename"</span>)<em class="xl">:</em></span><span class="hk in"></span><span class="ln add">11</span><span class="tx add"><span class="c">with</span> unreal.<span class="t">ScopedEditorTransaction</span>(<span class="s">"Batch rename"</span>)<em class="xr">, \</em></span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">12</span><span class="tx add">        unreal.<span class="t">ScopedSlowTask</span>(<span class="f">len</span>(assets), <span class="s">"Renaming assets"</span>) <span class="c">as</span> task:</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">13</span><span class="tx add">    task.<span class="f">make_dialog</span>(<span class="k">True</span>)</span></div>
+<div class="dr"><span class="ln">10</span><span class="tx l">    <span class="c">for</span> data <span class="c">in</span> assets:</span><span class="hk"></span><span class="ln">14</span><span class="tx">    <span class="c">for</span> data <span class="c">in</span> assets:</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"><span class="chk"></span></span><span class="ln add">15</span><span class="tx add">        <span class="c">if</span> task.<span class="f">should_cancel</span>():</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">16</span><span class="tx add">            <span class="c">break</span></span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">17</span><span class="tx add">        task.<span class="f">enter_progress_frame</span>(<span class="n">1</span>)</span></div>
+<div class="dr"><span class="ln">11</span><span class="tx l">        name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</span><span class="hk"></span><span class="ln">18</span><span class="tx">        name <span class="o">=</span> <span class="t">str</span>(data.asset_name)</span></div>
+<div class="dr"><span class="ln">12</span><span class="tx l">        <span class="c">if</span> <span class="k">not</span> name.<span class="f">startswith</span>(prefix):</span><span class="hk"></span><span class="ln">19</span><span class="tx">        <span class="c">if</span> <span class="k">not</span> name.<span class="f">startswith</span>(prefix):</span></div>
+<div class="dr"><span class="ln">13</span><span class="tx l">            new_path <span class="o">=</span> <span class="s">f"</span>{data.package_path}<span class="s">/</span>{prefix}{name}<span class="s">"</span></span><span class="hk"></span><span class="ln">20</span><span class="tx">            new_path <span class="o">=</span> <span class="s">f"</span>{data.package_path}<span class="s">/</span>{prefix}{name}<span class="s">"</span></span></div>
+<div class="dr"><span class="ln del">14</span><span class="tx l del">            <em class="xl">unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">rename_asset</span>(</em><span class="t">str</span>(data.package_name)<em class="xl">, new_path)</em></span><span class="hk in"><span class="chk on" id="hunk4"></span></span><span class="ln add">21</span><span class="tx add">            <em class="xr">src <span class="o">=</span> </em><span class="t">str</span>(data.package_name)</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">22</span><span class="tx add">            <span class="c">if</span> report_only:</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">23</span><span class="tx add">                unreal.<span class="f">log</span>(<span class="s">f"would rename </span>{src}<span class="s"> -&gt; </span>{new_path}<span class="s">"</span>)</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">24</span><span class="tx add">            <span class="c">elif</span> unreal.<span class="t">EditorAssetLibrary</span>.<span class="f">rename_asset</span>(src, new_path):</span></div>
+<div class="dr"><span class="ln fill"></span><span class="tx l fill"></span><span class="hk in"></span><span class="ln add">25</span><span class="tx add">                renamed <span class="o">+=</span> <span class="n">1</span></span></div>
+<div class="dr"><span class="ln">15</span><span class="tx l"></span><span class="hk"></span><span class="ln">26</span><span class="tx"></span></div>
+<div class="dr"><span class="ln del">16</span><span class="tx l del"><span class="f">print</span>(<em class="xl"><span class="s">"done"</span></em>)</span><span class="hk in"><span class="chk"></span></span><span class="ln add">27</span><span class="tx add"><span class="f">print</span>(<em class="xr"><span class="s">f"done: </span>{renamed}<span class="s"> renamed"</span></em>)</span></div>
+      </div>
+      <div class="dft"><span>5 changes</span><span class="a">+11 lines added</span><span class="c">3 lines changed</span><span>0 removed</span><div class="spacer"></div><span>2 hunks ticked for revert · applied to the buffer as one undoable edit</span></div>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="ok">● Idle</span><span>Session</span>
+    <span>⟲ Restored 3 buffers at 14:25</span>
+    <span>Language server <span class="ok">✓</span></span>
+    <span>Ruff <span class="ok">✓</span></span>
+    <div class="spacer"></div>
+    <span>Ln 21, Col 13</span><span>Spaces: 4</span><span>UTF-8 · LF</span><span>Journaled 1 s ago</span>
+  </div>
+</div>
+</div>
+
+<!-- annotations -->
+<div class="callout" data-for="#bannerBtns" data-at="r" data-dx="20"><div class="num">1</div></div>
+<div class="callout" data-for="#rDiscard" data-at="r" data-dx="-14" data-dy="0"><div class="num">2</div></div>
+<div class="callout" data-for="#tabDisk" data-at="tr" data-dx="-8" data-dy="-2"><div class="num">3</div></div>
+<div class="callout" data-for="#diffFoot" data-at="r" data-dx="-14" data-dy="-26"><div class="num">4</div></div>
+<div class="callout" data-for="#recPanel" data-at="tl" data-dx="14" data-dy="-14"><div class="num">5</div></div>
+<div class="callout" data-for="#lostLine" data-at="r" data-dx="18"><div class="num">6</div></div>
+<div class="callout" data-for="#pathBox" data-at="tr" data-dx="-14" data-dy="4"><div class="num">7</div></div>
+<div class="callout" data-for="#safeBox" data-at="tr" data-dx="-14" data-dy="4"><div class="num">8</div></div>
+<div class="callout" data-for="#dedup" data-at="r" data-dx="18"><div class="num">9</div></div>
+<div class="callout" data-for="#extEntry" data-at="r" data-dx="-18"><div class="num">10</div></div>
+<div class="callout" data-for="#fill5" data-at="r" data-dx="-30"><div class="num">11</div></div>
+<div class="callout" data-for="#lhBtns" data-at="l" data-dx="-20"><div class="num">12</div></div>
+
+<div class="legend">
+  <div><span class="num">1</span><span><b>Recovery banner.</b> After an unclean exit the tab reopens with a non-modal banner. The count is the number of buffers whose journal holds changes that are not on disk; another instance's buffers are not counted and are listed apart. Restore all, Review and Discard; you can keep working while you decide. Until you choose, each pending tab (⟲) is read-only under “Not restored yet”.</span></div>
+  <div><span class="num">2</span><span><b>Discard is not delete.</b> Discard moves the journals into local history, so a wrong click can be undone from the timeline.</span></div>
+  <div><span class="num">3</span><span><b>The conflict rule.</b> If the disk file changed after the journal's base version, the recovered buffer opens as <code>batch_rename.py (recovered)</code> next to the disk version, and nothing is overwritten.</span></div>
+  <div><span class="num">4</span><span><b>Recovered versus disk.</b> Blue marks text only in the recovered copy, green text only on disk. Once restored, copy hunks across, or use Save over batch_rename.py…, which asks before it overwrites the disk file.</span></div>
+  <div><span class="num">5</span><span><b>Review is a docked panel.</b> It is not modal: the editor and the other tabs stay usable. Each buffer shows its state and when it was last journaled. Another editor instance's buffers are listed separately and unticked.</span></div>
+  <div><span class="num">6</span><span><b>Runs cut off by the crash.</b> A run that was active when the editor exited is recorded with the outcome <code>lost</code>, in the output and the audit log.</span></div>
+  <div><span class="num">7</span><span><b>Where journals live.</b> <code>%LOCALAPPDATA%\DreamPythonEditor\5.8\CitySample-7c41e2\</code>: engine version, then the project name plus the first 6 hex digits of a SHA-256 of the <code>.uproject</code> path. Never in the project or the engine tree.</span></div>
+  <div><span class="num">8</span><span><b>Safe mode.</b> Entered automatically after two crashes in a row during session restore, or with <code>-DreamSafeMode</code>, or Shift while opening the tab. It skips session restore but still lists what can be recovered.</span></div>
+  <div><span class="num">9</span><span><b>Timeline of snapshots.</b> Local history records every save, every run (just before it starts), every external reload and recovery events. Identical snapshots are stored once. The default budget is 30 days and 500 MB per project.</span></div>
+  <div><span class="num">10</span><span><b>External reloads are kept.</b> When a P4 sync replaced a clean buffer, the text from before the sync stayed in the timeline.</span></div>
+  <div><span class="num">11</span><span><b>Side-by-side diff.</b> The selected snapshot (left, read-only) against the current buffer (right), with changes highlighted inside each line. Tick hunks in the middle column to take back only those parts.</span></div>
+  <div><span class="num">12</span><span><b>Restore actions.</b> Restore replaces the buffer text as one undoable edit. Restore as new tab opens the snapshot beside your text. Revert selected hunks applies only the ticked hunks. Nothing reaches disk until you save.</span></div>
+</div>
+</div>
+<script src="callouts.js"></script>
+</body></html>
