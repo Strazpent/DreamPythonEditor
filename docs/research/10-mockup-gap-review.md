@@ -8,8 +8,8 @@
 I rendered the mockup three times and the last render is clean. Nothing is clipped, the callouts sit next to what they explain without covering text, and the legend fits inside the 1600x1810 canvas.
 
 **Files**
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\02-run-and-cancel.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\02-run-and-cancel.png
+- <repo>\docs\mockups\02-run-and-cancel.html
+- <repo>\docs\images\02-run-and-cancel.png
 
 **What the image shows**
 - **Main window:** Run #22 of `batch_reimport.py` at 00:41. The script loops over 1,204 `AssetData` from `get_assets_by_path`, calling `ue_script_editor.progress` and `AssetToolsHelpers` / `AssetImportTask` / `import_asset_tasks`.
@@ -43,8 +43,8 @@ I rendered the mockup three times and the last render is clean. Nothing is clipp
 
 ### 03-completion-and-docs
 Files:
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\03-completion-and-docs.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\03-completion-and-docs.png (1600x1440, 4 renders)
+- <repo>\docs\mockups\03-completion-and-docs.html
+- <repo>\docs\images\03-completion-and-docs.png (1600x1440, 4 renders)
 
 **What the image shows**
 
@@ -89,8 +89,8 @@ One UE 5.8 editor window with the same title bar, dock tabs, toolbar and status 
 I made the mockup and rendered it four times. The final render is clean: nothing is clipped, no callout covers important text and every popup fits.
 
 **Files**
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\04-traceback-to-source.html`
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\04-traceback-to-source.png` (1600x1192)
+- `<repo>\docs\mockups\04-traceback-to-source.html`
+- `<repo>\docs\images\04-traceback-to-source.png` (1600x1192)
 
 **What it shows**
 
@@ -129,8 +129,8 @@ Three stages left to right, joined by blue elbow arrows. Each arrow is labelled 
 I built and rendered the mockup. It went through 4 renders, and the final one has no overlaps or clipping.
 
 **Files**
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\05-debugger-paused.html (canvas 1600x1320)
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\05-debugger-paused.png
+- <repo>\docs\mockups\05-debugger-paused.html (canvas 1600x1320)
+- <repo>\docs\images\05-debugger-paused.png
 
 **What the image shows**
 - **Paused banner:** an amber banner across the whole Unreal window reads "Paused in debugger — the rest of the editor is input-blocked until you Continue (F5) or Stop". It has its own Continue and Stop buttons. The main menus, the Content Browser tab and a sliver of the Lvl_Downtown viewport are dimmed and hatched, with an "Input blocked" label.
@@ -169,8 +169,8 @@ I built and rendered the mockup. It went through 4 renders, and the final one ha
 11. **Name mismatch with mockup 01.** Mockup 01 labels the dock tab "Python Editor", but SPEC's working title is "Python Script Editor". I used the SPEC name.
 
 ### 06-crash-recovery
-C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\06-crash-recovery.html
-C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\06-crash-recovery.png (1600x1825, rendered 3 times; the last render has no clipping or overlaps and every callout is anchored with data-for)
+<repo>\docs\mockups\06-crash-recovery.html
+<repo>\docs\images\06-crash-recovery.png (1600x1825, rendered 3 times; the last render has no clipping or overlaps and every callout is anchored with data-for)
 
 **What it shows**
 - **Scene A, the tab reopens after a crash:**
@@ -208,8 +208,8 @@ C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\06-crash-recovery.png (160
 
 ### 07-snippets-and-shelves
 Files:
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\07-snippets-and-shelves.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\07-snippets-and-shelves.png (1600x1640, 3 renders, no clipping or overlaps left)
+- <repo>\docs\mockups\07-snippets-and-shelves.html
+- <repo>\docs\images\07-snippets-and-shelves.png (1600x1640, 3 renders, no clipping or overlaps left)
 
 **What the image shows**
 
@@ -251,8 +251,8 @@ There are 10 callouts, all placed with data-for, and a 10-item legend.
 Mockup 08 is finished and the render is clean (4 renders). Callouts 1–10 sit on their targets, nothing is clipped, and the doctor's last row clears the status bar.
 
 **Files**
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\08-reload-and-environment.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\08-reload-and-environment.png (1600x1385)
+- <repo>\docs\mockups\08-reload-and-environment.html
+- <repo>\docs\images\08-reload-and-environment.png (1600x1385)
 
 **What the image shows**
 - **Chrome:** same as 01. The toolbar has Reload Package and an "Entry point (F5): studio_tools.ui.main · reload first" combo (RUN-13, J3).
@@ -291,8 +291,8 @@ Mockup 08 is finished and the render is clean (4 renders). Callouts 1–10 sit o
 The mockup for Unreal integration is done. It took three renders and the final one has no clipping or overlaps: every callout is anchored with `data-for`, and no popup is cut off.
 
 **Files**
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\09-unreal-integration.html` (1600x2030; only page-specific CSS plus a small script that draws the dashed drag path; shared files untouched)
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\09-unreal-integration.png`
+- `<repo>\docs\mockups\09-unreal-integration.html` (1600x2030; only page-specific CSS plus a small script that draws the dashed drag path; shared files untouched)
+- `<repo>\docs\images\09-unreal-integration.png`
 
 **What the image shows**
 - **Main window (Lvl_Downtown):** the Outliner (3 StaticMeshActors selected), the Content Browser (3 SM_Rock_* meshes selected) and the Python Script Editor docked as a panel tab.
@@ -330,8 +330,8 @@ The mockup for Unreal integration is done. It took three renders and the final o
 Rendered `10-settings-and-trust.png` at 1600x1432 in 5 renders. The last one is clean: no clipping, and no callout covers important text. I did not touch `ue.css`, `callouts.js` or `render.ps1`.
 
 **Files**
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\10-settings-and-trust.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\images\10-settings-and-trust.png
+- <repo>\docs\mockups\10-settings-and-trust.html
+- <repo>\docs\images\10-settings-and-trust.png
 
 **What the image shows**
 - **Left: Unreal main window with Editor Preferences docked.**

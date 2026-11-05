@@ -416,9 +416,9 @@ The per-edit sequence:
 ## Files read
 
 Research:
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\research\03-ide-features-lsp-dap.md` (C1, recommendation, source list)
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\research\05-architecture-and-robustness.md` (A1, A2, B, risks, questions)
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\research\06-user-voice-and-landscape.md` (CodeEditor mentions)
+- `<repo>\docs\research\03-ide-features-lsp-dap.md` (C1, recommendation, source list)
+- `<repo>\docs\research\05-architecture-and-robustness.md` (A1, A2, B, risks, questions)
+- `<repo>\docs\research\06-user-voice-and-landscape.md` (CodeEditor mentions)
 
 Engine (all under `C:\Program Files\Epic Games\UE_5.8\Engine\`):
 - `Source/Runtime/Slate/Public/Framework/Text/{ITextLayoutMarshaller.h, SyntaxHighlighterTextLayoutMarshaller.h, SyntaxTokenizer.h, TextLayout.h, SlateTextLayout.h, ShapedTextCache.h}`

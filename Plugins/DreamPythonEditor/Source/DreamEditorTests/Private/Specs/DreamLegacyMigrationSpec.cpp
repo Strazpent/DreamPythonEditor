@@ -171,16 +171,16 @@ void FDreamLegacyMigrationSpec::Define()
 
 	It("maps DreamHost to SumiHost's old hash folder and keeps other projects' hashes", [this]()
 	{
-		const FString Host = TEXT("c:/users/anima/desktop/unrealpythoneditor/dreamhost/dreamhost.uproject");
+		const FString Host = TEXT("c:/projects/unrealpythoneditor/dreamhost/dreamhost.uproject");
 		TestEqual(TEXT("the renamed host"), DreamLegacyMigration::LegacyProjectPath(Host),
-			FString(TEXT("c:/users/anima/desktop/unrealpythoneditor/sumihost/sumihost.uproject")));
+			FString(TEXT("c:/projects/unrealpythoneditor/sumihost/sumihost.uproject")));
 		TestEqual(TEXT("another project"), DreamLegacyMigration::LegacyProjectPath(TEXT("d:/games/mygame/mygame.uproject")),
 			FString(TEXT("d:/games/mygame/mygame.uproject")));
 		TestEqual(TEXT("a folder that only contains the name"), DreamLegacyMigration::LegacyProjectPath(TEXT("d:/dreamhosting/x.uproject")),
 			FString(TEXT("d:/dreamhosting/x.uproject")));
 		// The real host's old folder name, computed independently (SHA-256 of the lower-case path, 6 hex digits).
 		TestEqual(TEXT("SumiHost's old hash folder"), DreamLegacyMigration::RootNameFor(
-			TEXT("c:/users/anima/desktop/unrealpythoneditor/sumihost/sumihost.uproject"), TEXT("SumiHost"), 6), FString(TEXT("SumiHost-9eabca")));
+			TEXT("c:/projects/unrealpythoneditor/sumihost/sumihost.uproject"), TEXT("SumiHost"), 6), FString(TEXT("SumiHost-0c1752")));
 		TestEqual(TEXT("the same rule as MakeRootPath"), FPaths::GetCleanFilename(DreamStorageRoot::MakeRootPath(Dir, Paths.UProject, 6)),
 			DreamLegacyMigration::RootNameFor(DreamStorageRoot::NormalizedProjectPath(Paths.UProject), TEXT("DreamHost"), 6));
 	});

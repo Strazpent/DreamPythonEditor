@@ -9,7 +9,7 @@ Two path prefixes recur. They are written out in full the first time and shorten
 - **PSP** = `Engine/Plugins/Experimental/PythonScriptPlugin/Source/PythonScriptPlugin/`
 - **PSPC** = `Engine/Plugins/Experimental/PythonScriptPlugin/Content/Python/`
 
-There is also one empirical probe. The engine's own `python311.dll` was embedded in a throwaway host process (PowerShell + C# P/Invoke) with `Py_InitializeEx(0)`, which matches UE's `install_signal_handlers = 0`. It ran a script that tests interrupt, pending-call, async-exception and stdout-buffering behaviour. The script and output are in the session scratchpad: `C:\Users\anima\AppData\Local\Temp\claude\C--Users-anima-Desktop-reactionchess\cef630df-881f-4396-849f-f12554ae0865\scratchpad\pyprobe\` (`probe.py`, `run_probe.ps1`). Results are quoted where relevant as **[Probe]**. The probe runs CPython 3.11.8 exactly as shipped, but not inside the editor, so in-editor confirmation is still listed as a follow-up where it matters.
+There is also one empirical probe. The engine's own `python311.dll` was embedded in a throwaway host process (PowerShell + C# P/Invoke) with `Py_InitializeEx(0)`, which matches UE's `install_signal_handlers = 0`. It ran a script that tests interrupt, pending-call, async-exception and stdout-buffering behaviour. The script and output are in the session scratchpad: `%USERPROFILE%\AppData\Local\Temp\claude\C--Users-USER-Desktop-reactionchess\cef630df-881f-4396-849f-f12554ae0865\scratchpad\pyprobe\` (`probe.py`, `run_probe.ps1`). Results are quoted where relevant as **[Probe]**. The probe runs CPython 3.11.8 exactly as shipped, but not inside the editor, so in-editor confirmation is still listed as a follow-up where it matters.
 
 ---
 

@@ -313,7 +313,7 @@ StartupModule. A storage-root override keeps its folder and is not copied.
 
 ## Build and test
 
-All commands are run from the repository root (`C:/Users/anima/Desktop/UnrealPythonEditor`). They are kept gentle on a
+All commands are run from the repository root (`<repo>`). They are kept gentle on a
 shared machine (owner instruction, PO-06 phase 3): `run_build.bat` passes `-MaxParallelActions` with half the logical
 cores (`DREAM_BUILD_JOBS=<n>` overrides), test editors run at BelowNormal priority (`DREAM_EDITOR_PRIORITY=normal`
 overrides), and `run_tier4.bat --attended` takes over the desktop, so it is opt-in only and the owner is asked first. The toolchain is MSVC

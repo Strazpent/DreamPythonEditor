@@ -75,13 +75,13 @@ All `unreal.*` names used across the set are real 5.x API.
 ## Files
 
 All ten mockups were edited and re-rendered. Each image is written to `docs\images\<same name>.png`.
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\01-main-window.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\02-run-and-cancel.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\03-completion-and-docs.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\04-traceback-to-source.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\05-debugger-paused.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\06-crash-recovery.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\07-snippets-and-shelves.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\08-reload-and-environment.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\09-unreal-integration.html
-- C:\Users\anima\Desktop\UnrealPythonEditor\docs\mockups\10-settings-and-trust.html
+- <repo>\docs\mockups\01-main-window.html
+- <repo>\docs\mockups\02-run-and-cancel.html
+- <repo>\docs\mockups\03-completion-and-docs.html
+- <repo>\docs\mockups\04-traceback-to-source.html
+- <repo>\docs\mockups\05-debugger-paused.html
+- <repo>\docs\mockups\06-crash-recovery.html
+- <repo>\docs\mockups\07-snippets-and-shelves.html
+- <repo>\docs\mockups\08-reload-and-environment.html
+- <repo>\docs\mockups\09-unreal-integration.html
+- <repo>\docs\mockups\10-settings-and-trust.html

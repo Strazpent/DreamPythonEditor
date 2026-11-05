@@ -578,7 +578,7 @@ Actual chord rebinds should use Epic's own mechanism, `EditorKeyBindings.ini`, t
 ## Files read
 
 Repo research:
-- `C:\Users\anima\Desktop\UnrealPythonEditor\docs\research\01..06` (grep plus targeted sections of 04, 05 and 06).
+- `<repo>\docs\research\01..06` (grep plus targeted sections of 04, 05 and 06).
 
 Engine (paths relative to `Engine/`):
 
@@ -635,4 +635,4 @@ Engine (paths relative to `Engine/`):
 **AI Assistant**
 - `Plugins/Experimental/AIAssistant/AIAssistant.uplugin`, `Source/AIAssistant/Private/{AIAssistant.cpp, AIAssistantCommands.cpp, AIAssistantInputProcessor.cpp, AIAssistantConfig.cpp, AIAssistantWebApplication.cpp, AIAssistantTransactionBufferManager.{h,cpp}, AIAssistantToolset.h}`
 
-**Chord scan:** a Python scan of every `UI_COMMAND` statement under `Source/Editor`, `Source/Developer`, `Source/Runtime/{Slate,SlateCore,Engine}` and `Plugins`. Script: `C:\Users\anima\AppData\Local\Temp\claude\C--Users-anima-Desktop-reactionchess\cef630df-881f-4396-849f-f12554ae0865\scratchpad\chords.py`. Output: `chords_out.txt` in the same folder.
+**Chord scan:** a Python scan of every `UI_COMMAND` statement under `Source/Editor`, `Source/Developer`, `Source/Runtime/{Slate,SlateCore,Engine}` and `Plugins`. Script: `%USERPROFILE%\AppData\Local\Temp\claude\C--Users-USER-Desktop-reactionchess\cef630df-881f-4396-849f-f12554ae0865\scratchpad\chords.py`. Output: `chords_out.txt` in the same folder.

@@ -562,6 +562,6 @@ All paths are under `C:\Program Files\Epic Games\UE_5.8\Engine\` unless stated o
 - `Binaries/ThirdParty/Python3/Win64/` (listing, `NEWS.txt`, `Lib/site-packages`, `Lib/ensurepip/_bundled`, `Scripts`, `DLLs`)
 - Full-engine `find` for jedi, parso, debugpy, pydevd, pyflakes, pylint, black, ruff, pyright and typeshed
 
-**Research files** (in `C:\Users\anima\Desktop\UnrealPythonEditor\docs\research\`)
+**Research files** (in `<repo>\docs\research\`)
 - `03-ide-features-lsp-dap.md`, `04-unreal-python-internals.md`, `05-architecture-and-robustness.md` and `06-user-voice-and-landscape.md`, read for claims via grep and targeted ranges.
 - `01` and `02` were grepped for stub and pip claims only.
